@@ -1060,68 +1060,80 @@
             };
 
             const handleTimeout = () => {
-                setShowAnswer(true);
-                setFeedback('incorrect');
-                setAttempts(prev => prev + 1);
-                
-                const penalty = getScoreDelta(selectedDifficulty.id, false);
-                setScore(prev => Math.max(0, prev + penalty));
-
-                setCombo(0);
-                
-                const exists = errors.find(e => e.verb.inf === currentVerb.inf && e.tense.id === currentTense.id && e.person === currentPerson);
-                if (!exists) setErrors(prev => [...prev, { verb: currentVerb, tense: currentTense, person: currentPerson }]);
-
-                const correctAnswer = conjugate(currentVerb, currentTense.id, currentPerson);
-                speakText(correctAnswer);
-
-                handlePauseCheck();
-            };
-
-            const checkAnswer = () => {
-                const correct = conjugate(currentVerb, currentTense.id, currentPerson).toLowerCase().trim();
-                const user = userInput.toLowerCase().trim();
-                
-                setShowAnswer(true);
-                setAttempts(prev => prev + 1);
-
-                if (user === correct) {
-                    setFeedback('correct');
-                    const multiplier = getMultiplier();
-                    
-                    const basePoints = getScoreDelta(selectedDifficulty.id, true);
-                    setScore(prev => Math.max(0, prev + (basePoints * multiplier)));
-
-                    setCombo(prev => prev + 1);
-                    
-                    if (timeAttackMode) setTimeLeft(prev => prev + 3);
-
-                    if (reviewMode) {
-                        setErrors(prev => prev.filter(e => !(e.verb.inf === currentVerb.inf && e.tense.id === currentTense.id && e.person === currentPerson)));
-                        if (errors.length <= 1) setReviewMode(false); 
-                    }
-
-                } else {
+                try {
+                    setShowAnswer(true);
                     setFeedback('incorrect');
+                    setAttempts(prev => prev + 1);
                     
                     const penalty = getScoreDelta(selectedDifficulty.id, false);
                     setScore(prev => Math.max(0, prev + penalty));
-                    
+
                     setCombo(0);
                     
-                    if (timeAttackMode) setTimeLeft(prev => Math.max(0, prev - 5));
-
                     const exists = errors.find(e => e.verb.inf === currentVerb.inf && e.tense.id === currentTense.id && e.person === currentPerson);
                     if (!exists) setErrors(prev => [...prev, { verb: currentVerb, tense: currentTense, person: currentPerson }]);
-                }
-                
-                const correctAnswer = conjugate(currentVerb, currentTense.id, currentPerson);
-                speakText(correctAnswer);
 
-                if (timeAttackMode && !gameOver) {
-                    setTimeout(() => spin(), 1500); 
-                } else if (!timeAttackMode) {
+                    const correctAnswer = safeConjugate(currentVerb, currentTense.id, currentPerson);
+                    if (correctAnswer) speakText(correctAnswer);
+
                     handlePauseCheck();
+                } catch (e) {
+                    console.error('Error in handleTimeout:', e);
+                    setShowAnswer(true);
+                    setFeedback('incorrect');
+                }
+            };
+
+            const checkAnswer = () => {
+                try {
+                    const correct = safeConjugate(currentVerb, currentTense.id, currentPerson).toLowerCase().trim();
+                    const user = userInput.toLowerCase().trim();
+                    
+                    setShowAnswer(true);
+                    setAttempts(prev => prev + 1);
+
+                    if (user === correct) {
+                        setFeedback('correct');
+                        const multiplier = getMultiplier();
+                        
+                        const basePoints = getScoreDelta(selectedDifficulty.id, true);
+                        setScore(prev => Math.max(0, prev + (basePoints * multiplier)));
+
+                        setCombo(prev => prev + 1);
+                        
+                        if (timeAttackMode) setTimeLeft(prev => prev + 3);
+
+                        if (reviewMode) {
+                            setErrors(prev => prev.filter(e => !(e.verb.inf === currentVerb.inf && e.tense.id === currentTense.id && e.person === currentPerson)));
+                            if (errors.length <= 1) setReviewMode(false); 
+                        }
+
+                    } else {
+                        setFeedback('incorrect');
+                        
+                        const penalty = getScoreDelta(selectedDifficulty.id, false);
+                        setScore(prev => Math.max(0, prev + penalty));
+                        
+                        setCombo(0);
+                        
+                        if (timeAttackMode) setTimeLeft(prev => Math.max(0, prev - 5));
+
+                        const exists = errors.find(e => e.verb.inf === currentVerb.inf && e.tense.id === currentTense.id && e.person === currentPerson);
+                        if (!exists) setErrors(prev => [...prev, { verb: currentVerb, tense: currentTense, person: currentPerson }]);
+                    }
+                    
+                    const correctAnswer = safeConjugate(currentVerb, currentTense.id, currentPerson);
+                    if (correctAnswer) speakText(correctAnswer);
+
+                    if (timeAttackMode && !gameOver) {
+                        setTimeout(() => spin(), 1500); 
+                    } else if (!timeAttackMode) {
+                        handlePauseCheck();
+                    }
+                } catch (e) {
+                    console.error('Error in checkAnswer:', e);
+                    setFeedback('incorrect');
+                    setShowAnswer(true);
                 }
             };
 
