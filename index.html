@@ -960,13 +960,25 @@
                 return { type: 'error', message: correct, suggestion };
             };
 
+            const safeConjugate = (verbObj, tenseId, personIdx) => {
+                try {
+                    if (!verbObj || !tenseId) return '';
+                    return conjugate(verbObj, tenseId, personIdx);
+                } catch (e) {
+                    console.error('Conjugation error:', e);
+                    return '';
+                }
+            };
+
             const handleInputChange = (value) => {
                 setUserInput(value);
                 
                 if (immediateFeedback && !showAnswer) {
-                    const correct = conjugate(currentVerb, currentTense.id, currentPerson);
-                    const feedback = getImmediateFeedback(value, correct);
-                    // Could add visual feedback here if needed
+                    const correct = safeConjugate(currentVerb, currentTense.id, currentPerson);
+                    if (correct) {
+                        const feedback = getImmediateFeedback(value, correct);
+                        // Could add visual feedback here if needed
+                    }
                 }
             };
             
@@ -1214,7 +1226,8 @@
                                                                     className={`w-full p-3 text-center text-xl border-2 rounded-xl focus:outline-none transition-colors ${
                                                                         immediateFeedback && userInput ? 
                                                                             (() => {
-                                                                                const correct = conjugate(currentVerb, currentTense.id, currentPerson);
+                                                                                const correct = safeConjugate(currentVerb, currentTense.id, currentPerson);
+                                                                                if (!correct) return 'border-gray-200';
                                                                                 const feedback = getImmediateFeedback(userInput, correct);
                                                                                 if (feedback?.type === 'correct') return 'border-green-500 bg-green-50';
                                                                                 if (feedback?.type === 'hint') return 'border-blue-500 bg-blue-50';
@@ -1228,7 +1241,8 @@
                                                                     autoCapitalize="none" 
                                                                 />
                                                                 {immediateFeedback && userInput && (() => {
-                                                                    const correct = conjugate(currentVerb, currentTense.id, currentPerson);
+                                                                    const correct = safeConjugate(currentVerb, currentTense.id, currentPerson);
+                                                                    if (!correct) return null;
                                                                     const feedback = getImmediateFeedback(userInput, correct);
                                                                     if (feedback?.type === 'hint') {
                                                                         return (
@@ -1241,7 +1255,8 @@
                                                                 })()}
                                                             </div>
                                                             {immediateFeedback && userInput && (() => {
-                                                                const correct = conjugate(currentVerb, currentTense.id, currentPerson);
+                                                                const correct = safeConjugate(currentVerb, currentTense.id, currentPerson);
+                                                                if (!correct) return null;
                                                                 const feedback = getImmediateFeedback(userInput, correct);
                                                                 if (feedback?.type === 'error') {
                                                                     return (
@@ -1263,8 +1278,8 @@
                                                             <FeedbackCharacter type={feedback} />
                                                             {feedback === 'correct' ? <div className="text-green-700 font-bold text-lg mb-2">¡Correcto! {getMultiplier() > 1 && <span className="text-orange-500">x{getMultiplier()}</span>}</div> : <div className="text-red-600 font-bold text-lg mb-2">Incorrecto 😕</div>}
                                                             <div className="flex items-center justify-center gap-2">
-                                                                <span className="text-3xl font-black text-gray-800 block mb-1">{conjugate(currentVerb, currentTense.id, currentPerson)}</span>
-                                                                <AudioButton text={conjugate(currentVerb, currentTense.id, currentPerson)} />
+                                                                <span className="text-3xl font-black text-gray-800 block mb-1">{safeConjugate(currentVerb, currentTense.id, currentPerson)}</span>
+                                                                <AudioButton text={safeConjugate(currentVerb, currentTense.id, currentPerson)} />
                                                             </div>
                                                             {feedback === 'incorrect' && userInput && <div className="text-sm text-gray-500 mt-2">Tú escribiste: <span className="line-through decoration-red-400">{userInput}</span></div>}
                                                             {!timeAttackMode && <div className="w-full bg-gray-200 rounded-full h-1 mt-3 overflow-hidden"><div className="bg-gray-800 h-1 rounded-full animate-[width_2.5s_linear_forwards]" style={{width: '0%'}}></div></div>}
