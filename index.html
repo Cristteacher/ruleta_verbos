@@ -1,0 +1,1619 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ruleta de Verbos Ultimate - Nivel B1 a C2</title>
+    
+    <!-- React & Tailwind Setup -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts & Custom Styles -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;900&display=swap');
+        
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #fafaf9; /* stone-50 */
+        }
+
+        /* THEMES */
+        .theme-spain { background: linear-gradient(to right, #AA151B 25%, #F1BF00 25%, #F1BF00 75%, #AA151B 75%); }
+        .theme-mexico { background: linear-gradient(to right, #006847 33%, #FFFFFF 33%, #FFFFFF 66%, #CE1126 66%); }
+        .theme-argentina { background: linear-gradient(to right, #75AADB 33%, #FFFFFF 33%, #FFFFFF 66%, #75AADB 66%); }
+        .theme-colombia { background: linear-gradient(to bottom, #FCD116 50%, #003893 50%, #003893 75%, #CE1126 75%); }
+        .theme-peru { background: linear-gradient(to right, #D91023 33%, #FFFFFF 33%, #FFFFFF 66%, #D91023 66%); }
+        .theme-chile { background: linear-gradient(to right, #0039A6 33%, #FFFFFF 33%, #FFFFFF 100%); }
+
+        .spin-animation {
+            animation: spin 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .animate-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .timer-bar { transition: width 1s linear; }
+        
+        @keyframes shake {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(5deg); }
+            75% { transform: rotate(-5deg); }
+            100% { transform: rotate(0deg); }
+        }
+        .clock-shake { animation: shake 0.5s infinite; }
+
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        .pop-anim { animation: pop 0.2s ease-out; }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #999; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo } = React;
+
+        // --- DATA ---
+        // Expanded list for B1-C2 Level (100+ verbs)
+        const VERBS = [
+            { inf: "Ser", type: "irr", trans: "To be", ctx: "muy amable" }, 
+            { inf: "Estar", type: "irr", trans: "To be", ctx: "en casa" }, 
+            { inf: "Tener", type: "go", trans: "To have", ctx: "mucho éxito" }, 
+            { inf: "Haber", type: "irr", trans: "To have (aux)", ctx: "tenido suerte" }, 
+            { inf: "Hacer", type: "go", trans: "To do/make", ctx: "el trabajo" }, 
+            { inf: "Ir", type: "irr", trans: "To go", ctx: "al parque" }, 
+            { inf: "Poder", type: "ue", trans: "To be able to", ctx: "hacerlo bien" }, 
+            { inf: "Decir", type: "go", trans: "To say", ctx: "la verdad" },
+            { inf: "Querer", type: "ie", trans: "To want", ctx: "un helado" }, 
+            { inf: "Ver", type: "irr", trans: "To see", ctx: "la película" },
+            { inf: "Comer", type: "reg", trans: "To eat", ctx: "pizza" }, 
+            { inf: "Hablar", type: "reg", trans: "To speak", ctx: "español" },
+            { inf: "Vivir", type: "reg", trans: "To live", ctx: "en Madrid" }, 
+            { inf: "Dar", type: "irr", trans: "To give", ctx: "un regalo" },
+            { inf: "Saber", type: "irr", trans: "To know", ctx: "la respuesta" }, 
+            { inf: "Poner", type: "go", trans: "To put", ctx: "la mesa" },
+            { inf: "Llegar", type: "reg", trans: "To arrive", ctx: "a tiempo" }, 
+            { inf: "Creer", type: "reg", trans: "To believe", ctx: "en ti" },
+            { inf: "Buscar", type: "reg", trans: "To search", ctx: "las llaves" }, 
+            { inf: "Sentir", type: "ie", trans: "To feel", ctx: "el frío" },
+            { inf: "Escribir", type: "reg", trans: "To write", ctx: "un libro" }, 
+            { inf: "Perder", type: "ie", trans: "To lose", ctx: "el autobús" },
+            { inf: "Entender", type: "ie", trans: "To understand", ctx: "la lección" }, 
+            { inf: "Pedir", type: "i", trans: "To ask for", ctx: "la cuenta" },
+            { inf: "Recordar", type: "ue", trans: "To remember", ctx: "ese día" }, 
+            { inf: "Volver", type: "ue", trans: "To return", ctx: "pronto" },
+            { inf: "Comenzar", type: "ie", trans: "To begin", ctx: "la clase" }, 
+            { inf: "Servir", type: "i", trans: "To serve", ctx: "la cena" },
+            { inf: "Sacar", type: "reg", trans: "To take out", ctx: "buenas notas" }, 
+            { inf: "Necesitar", type: "reg", trans: "To need", ctx: "ayuda" },
+            { inf: "Leer", type: "irr", trans: "To read", ctx: "el periódico" }, 
+            { inf: "Caer", type: "irr", trans: "To fall", ctx: "al suelo" },
+            { inf: "Jugar", type: "ue", trans: "To play", ctx: "al fútbol" }, 
+            { inf: "Abrir", type: "reg", trans: "To open", ctx: "la puerta" },
+            { inf: "Oír", type: "irr", trans: "To hear", ctx: "un ruido" }, 
+            { inf: "Traer", type: "irr", trans: "To bring", ctx: "regalos" },
+            { inf: "Dormir", type: "ue", trans: "To sleep", ctx: "muy bien" }, 
+            { inf: "Conocer", type: "zc", trans: "To know (people)", ctx: "a mucha gente" },
+            { inf: "Comprar", type: "reg", trans: "To buy", ctx: "comida" }, 
+            { inf: "Estudiar", type: "reg", trans: "To study", ctx: "matemáticas" },
+            { inf: "Ayudar", type: "reg", trans: "To help", ctx: "a mis amigos" }, 
+            { inf: "Gustar", type: "reg", trans: "To like", ctx: "la sopa" }, 
+            { inf: "Tocar", type: "reg", trans: "To touch/play", ctx: "la guitarra" }, 
+            { inf: "Pensar", type: "ie", trans: "To think", ctx: "en el futuro" },
+            { inf: "Mirar", type: "reg", trans: "To watch", ctx: "la televisión" }, 
+            { inf: "Esperar", type: "reg", trans: "To wait/hope", ctx: "el tren" },
+            { inf: "Entrar", type: "reg", trans: "To enter", ctx: "en la sala" }, 
+            { inf: "Trabajar", type: "reg", trans: "To work", ctx: "mucho" },
+            { inf: "Terminar", type: "reg", trans: "To finish", ctx: "el proyecto" }, 
+            { inf: "Cambiar", type: "reg", trans: "To change", ctx: "de opinión" },
+            { inf: "Venir", type: "irr", trans: "To come", ctx: "a la fiesta" },
+            // NEW ADVANCED VERBS
+            { inf: "Andar", type: "irr", trans: "To walk", ctx: "por el parque" },
+            { inf: "Caber", type: "irr", trans: "To fit", ctx: "en el coche" },
+            { inf: "Conducir", type: "irr", trans: "To drive", ctx: "con cuidado" },
+            { inf: "Traducir", type: "irr", trans: "To translate", ctx: "el texto" },
+            { inf: "Elegir", type: "irr", trans: "To choose", ctx: "la mejor opción" },
+            { inf: "Seguir", type: "irr", trans: "To follow", ctx: "las instrucciones" },
+            { inf: "Valer", type: "irr", trans: "To be worth", ctx: "la pena" },
+            { inf: "Oler", type: "irr", trans: "To smell", ctx: "las flores" },
+            { inf: "Reír", type: "irr", trans: "To laugh", ctx: "a carcajadas" },
+            { inf: "Huir", type: "irr", trans: "To flee", ctx: "del peligro" },
+            { inf: "Satisfacer", type: "irr", trans: "To satisfy", ctx: "la demanda" },
+            { inf: "Parecer", type: "zc", trans: "To seem", ctx: "cansado" },
+            { inf: "Nacer", type: "zc", trans: "To be born", ctx: "en enero" },
+            { inf: "Suponer", type: "go", trans: "To suppose", ctx: "que sí" },
+            { inf: "Proponer", type: "go", trans: "To propose", ctx: "una idea" },
+            { inf: "Obtener", type: "go", trans: "To obtain", ctx: "el permiso" },
+            { inf: "Mantener", type: "go", trans: "To maintain", ctx: "la calma" },
+            { inf: "Contar", type: "ue", trans: "To count/tell", ctx: "una historia" },
+            { inf: "Morir", type: "ue", trans: "To die", ctx: "de risa" },
+            { inf: "Resolver", type: "ue", trans: "To resolve", ctx: "el problema" },
+            { inf: "Romper", type: "reg", trans: "To break", ctx: "el vaso" },
+            { inf: "Descubrir", type: "reg", trans: "To discover", ctx: "la verdad" },
+            { inf: "Volar", type: "ue", trans: "To fly", ctx: "muy alto" },
+            { inf: "Construir", type: "irr", trans: "To build", ctx: "un puente" },
+            // ADDITIONAL VERBS FOR EXPANDED CONTENT
+            { inf: "Aceptar", type: "reg", trans: "To accept", ctx: "la invitación" },
+            { inf: "Acostarse", type: "ue", trans: "To go to bed", ctx: "temprano" },
+            { inf: "Acostumbrarse", type: "reg", trans: "To get used to", ctx: "el clima" },
+            { inf: "Admitir", type: "reg", trans: "To admit", ctx: "el error" },
+            { inf: "Adquirir", type: "ie", trans: "To acquire", ctx: "conocimientos" },
+            { inf: "Agarrar", type: "reg", trans: "To grab", ctx: "el libro" },
+            { inf: "Agradecer", type: "zc", trans: "To thank", ctx: "tu ayuda" },
+            { inf: "Alcanzar", type: "reg", trans: "To reach", ctx: "la meta" },
+            { inf: "Alegarse", type: "reg", trans: "To be happy", ctx: "por ti" },
+            { inf: "Almorzar", type: "ue", trans: "To have lunch", ctx: "con amigos" },
+            { inf: "Alquilar", type: "reg", trans: "To rent", ctx: "un apartamento" },
+            { inf: "Apagar", type: "reg", trans: "To turn off", ctx: "la luz" },
+            { inf: "Aparecer", type: "zc", trans: "To appear", ctx: "de repente" },
+            { inf: "Aprender", type: "reg", trans: "To learn", ctx: "idiomas" },
+            { inf: "Asistir", type: "reg", trans: "To attend", ctx: "a clases" },
+            { inf: "Aumentar", type: "reg", trans: "To increase", ctx: "el precio" },
+            { inf: "Bajar", type: "reg", trans: "To go down", ctx: "las escaleras" },
+            { inf: "Bañarse", type: "reg", trans: "To bathe", ctx: "todos los días" },
+            { inf: "Beber", type: "reg", trans: "To drink", ctx: "agua" },
+            { inf: "Caerse", type: "reg", trans: "To fall down", ctx: "de la bici" },
+            { inf: "Caminar", type: "reg", trans: "To walk", ctx: "al trabajo" },
+            { inf: "Cantar", type: "reg", trans: "To sing", ctx: "canciones" },
+            { inf: "Celebrar", type: "reg", trans: "To celebrate", ctx: "el cumpleaños" },
+            { inf: "Cenar", type: "reg", trans: "To have dinner", ctx: "temprano" },
+            { inf: "Cerrar", type: "reg", trans: "To close", ctx: "la puerta" },
+            { inf: "Cocinar", type: "reg", trans: "To cook", ctx: "la comida" },
+            { inf: "Coger", type: "reg", trans: "To take/grab", ctx: "el autobús" },
+            { inf: "Colocar", type: "reg", trans: "To place", ctx: "los libros" },
+            { inf: "Comenzar", type: "ie", trans: "To begin", ctx: "la reunión" },
+            { inf: "Comparar", type: "reg", trans: "To compare", ctx: "precios" },
+            { inf: "Completar", type: "reg", trans: "To complete", ctx: "la tarea" },
+            { inf: "Conseguir", type: "i", trans: "To get/obtain", ctx: "un trabajo" },
+            { inf: "Construir", type: "irr", trans: "To build", ctx: "una casa" },
+            { inf: "Contestar", type: "reg", trans: "To answer", ctx: "la pregunta" },
+            { inf: "Continuar", type: "reg", trans: "To continue", ctx: "estudiando" },
+            { inf: "Correr", type: "reg", trans: "To run", ctx: "en el parque" },
+            { inf: "Costar", type: "ue", trans: "To cost", ctx: "muy caro" },
+            { inf: "Crecer", type: "zc", trans: "To grow", ctx: "rápido" },
+            { inf: "Criticar", type: "reg", trans: "To criticize", ctx: "la película" },
+            { inf: "Cruzar", type: "reg", trans: "To cross", ctx: "la calle" },
+            { inf: "Cumplir", type: "reg", trans: "To fulfill", ctx: "años" },
+            { inf: "Deber", type: "reg", trans: "To owe/should", ctx: "dinero" },
+            { inf: "Decidir", type: "reg", trans: "To decide", ctx: "qué hacer" },
+            { inf: "Defender", type: "reg", trans: "To defend", ctx: "sus ideas" },
+            { inf: "Degustar", type: "reg", trans: "To taste", ctx: "el vino" },
+            { inf: "Desaparecer", type: "zc", trans: "To disappear", ctx: "misteriosamente" },
+            { inf: "Descansar", type: "reg", trans: "To rest", ctx: "un rato" },
+            { inf: "Describir", type: "reg", trans: "To describe", ctx: "la escena" },
+            { inf: "Despertarse", type: "ie", trans: "To wake up", ctx: "temprano" },
+            { inf: "Destruir", type: "irr", trans: "To destroy", ctx: "todo" },
+            { inf: "Devolver", type: "ue", trans: "To return", ctx: "el libro" },
+            { inf: "Dibujar", type: "reg", trans: "To draw", ctx: "un cuadro" },
+            { inf: "Dirigir", type: "reg", trans: "To direct", ctx: "la empresa" },
+            { inf: "Discutir", type: "reg", trans: "To discuss", ctx: "el tema" },
+            { inf: "Disfrutar", type: "reg", trans: "To enjoy", ctx: "la música" },
+            { inf: "Ducharse", type: "reg", trans: "To shower", ctx: "por la mañana" },
+            { inf: "Elegir", type: "i", trans: "To choose", ctx: "el mejor" },
+            { inf: "Empezar", type: "ie", trans: "To start", ctx: "el proyecto" },
+            { inf: "Encantar", type: "reg", trans: "To love", ctx: "bailar" },
+            { inf: "Encontrar", type: "ue", trans: "To find", ctx: "las llaves" },
+            { inf: "Enfermarse", type: "reg", trans: "To get sick", ctx: "ayer" },
+            { inf: "Enseñar", type: "reg", trans: "To teach", ctx: "español" },
+            { inf: "Entregar", type: "reg", trans: "To deliver", ctx: "el paquete" },
+            { inf: "Escuchar", type: "reg", trans: "To listen", ctx: "música" },
+            { inf: "Esconder", type: "reg", trans: "To hide", ctx: "el regalo" },
+            { inf: "Explicar", type: "reg", trans: "To explain", ctx: "la lección" },
+            { inf: "Faltar", type: "reg", trans: "To miss", ctx: "a clase" },
+            { inf: "Fregar", type: "ie", trans: "To wash dishes", ctx: "los platos" },
+            { inf: "Freír", type: "i", trans: "To fry", ctx: "patatas" },
+            { inf: "Ganar", type: "reg", trans: "To win/earn", ctx: "dinero" },
+            { inf: "Gastar", type: "reg", trans: "To spend", ctx: "dinero" },
+            { inf: "Gritar", type: "reg", trans: "To shout", ctx: "muy fuerte" },
+            { inf: "Guardar", type: "reg", trans: "To save/keep", ctx: "el secreto" },
+            { inf: "Herir", type: "ie", trans: "To hurt", ctx: "al niño" },
+            { inf: "Importar", type: "reg", trans: "To matter", ctx: "mucho" },
+            { inf: "Insistir", type: "reg", trans: "To insist", ctx: "en ir" },
+            { inf: "Intentar", type: "reg", trans: "To try", ctx: "otra vez" },
+            { inf: "Invitar", type: "reg", trans: "To invite", ctx: "a cenar" },
+            { inf: "Lavarse", type: "reg", trans: "To wash oneself", ctx: "las manos" },
+            { inf: "Limpiar", type: "reg", trans: "To clean", ctx: "la casa" },
+            { inf: "Llamarse", type: "reg", trans: "To be called", ctx: "María" },
+            { inf: "Llevar", type: "reg", trans: "To carry/wear", ctx: "una mochila" },
+            { inf: "Llover", type: "ue", trans: "To rain", ctx: "mucho" },
+            { inf: "Luchar", type: "reg", trans: "To fight", ctx: "por la paz" },
+            { inf: "Matar", type: "reg", trans: "To kill", ctx: "el tiempo" },
+            { inf: "Mejorar", type: "reg", trans: "To improve", ctx: "la salud" },
+            { inf: "Mentir", type: "ie", trans: "To lie", ctx: "siempre" },
+            { inf: "Merecer", type: "zc", trans: "To deserve", ctx: "un premio" },
+            { inf: "Morder", type: "ue", trans: "To bite", ctx: "la manzana" },
+            { inf: "Mostrar", type: "ue", trans: "To show", ctx: "el camino" },
+            { inf: "Mover", type: "ue", trans: "To move", ctx: "los muebles" },
+            { inf: "Nadar", type: "reg", trans: "To swim", ctx: "en la piscina" },
+            { inf: "Negar", type: "ie", trans: "To deny", ctx: "todo" },
+            { inf: "Ofrecer", type: "zc", trans: "To offer", ctx: "ayuda" },
+            { inf: "Oponerse", type: "go", trans: "To oppose", ctx: "al plan" },
+            { inf: "Organizar", type: "reg", trans: "To organize", ctx: "la fiesta" },
+            { inf: "Pagar", type: "reg", trans: "To pay", ctx: "la cuenta" },
+            { inf: "Parar", type: "reg", trans: "To stop", ctx: "el coche" },
+            { inf: "Parecerse", type: "zc", trans: "To look like", ctx: "a su madre" },
+            { inf: "Participar", type: "reg", trans: "To participate", ctx: "en el juego" },
+            { inf: "Pasar", type: "reg", trans: "To pass/spend", ctx: "tiempo" },
+            { inf: "Patinar", type: "reg", trans: "To skate", ctx: "sobre hielo" },
+            { inf: "Pelear", type: "reg", trans: "To fight", ctx: "con amigos" },
+            { inf: "Pertenecer", type: "zc", trans: "To belong", ctx: "a la familia" },
+            { inf: "Pintar", type: "reg", trans: "To paint", ctx: "un cuadro" },
+            { inf: "Planchar", type: "reg", trans: "To iron", ctx: "la ropa" },
+            { inf: "Preguntar", type: "reg", trans: "To ask", ctx: "por direcciones" },
+            { inf: "Preparar", type: "reg", trans: "To prepare", ctx: "la comida" },
+            { inf: "Presentar", type: "reg", trans: "To present", ctx: "el proyecto" },
+            { inf: "Producir", type: "irr", trans: "To produce", ctx: "películas" },
+            { inf: "Proteger", type: "reg", trans: "To protect", ctx: "el medio ambiente" },
+            { inf: "Quedarse", type: "reg", trans: "To stay", ctx: "en casa" },
+            { inf: "Quitar", type: "reg", trans: "To remove", ctx: "la mesa" },
+            { inf: "Recibir", type: "reg", trans: "To receive", ctx: "cartas" },
+            { inf: "Recoger", type: "reg", trans: "To pick up", ctx: "los juguetes" },
+            { inf: "Reconocer", type: "zc", trans: "To recognize", ctx: "la voz" },
+            { inf: "Recordar", type: "ue", trans: "To remember", ctx: "el pasado" },
+            { inf: "Reducir", type: "irr", trans: "To reduce", ctx: "gastos" },
+            { inf: "Regalar", type: "reg", trans: "To give as gift", ctx: "flores" },
+            { inf: "Regresar", type: "reg", trans: "To return", ctx: "pronto" },
+            { inf: "Repetir", type: "i", trans: "To repeat", ctx: "la pregunta" },
+            { inf: "Responder", type: "reg", trans: "To respond", ctx: "rápido" },
+            { inf: "Rociar", type: "reg", trans: "To spray", ctx: "agua" },
+            { inf: "Salir", type: "go", trans: "To go out", ctx: "de fiesta" },
+            { inf: "Saltar", type: "reg", trans: "To jump", ctx: "muy alto" },
+            { inf: "Saludar", type: "reg", trans: "To greet", ctx: "a todos" },
+            { inf: "Salvar", type: "reg", trans: "To save", ctx: "vidas" },
+            { inf: "Secarse", type: "reg", trans: "To dry oneself", ctx: "con la toalla" },
+            { inf: "Seguir", type: "i", trans: "To follow", ctx: "el camino" },
+            { inf: "Seleccionar", type: "reg", trans: "To select", ctx: "opciones" },
+            { inf: "Sentarse", type: "ie", trans: "To sit down", ctx: "en la silla" },
+            { inf: "Separar", type: "reg", trans: "To separate", ctx: "cosas" },
+            { inf: "Sonreír", type: "i", trans: "To smile", ctx: "siempre" },
+            { inf: "Soñar", type: "ue", trans: "To dream", ctx: "con viajar" },
+            { inf: "Subir", type: "reg", trans: "To go up", ctx: "las escaleras" },
+            { inf: "Suceder", type: "reg", trans: "To happen", ctx: "ayer" },
+            { inf: "Sufrir", type: "reg", trans: "To suffer", ctx: "mucho" },
+            { inf: "Sugerir", type: "ie", trans: "To suggest", ctx: "una idea" },
+            { inf: "Tardar", type: "reg", trans: "To take time", ctx: "en llegar" },
+            { inf: "Tocar", type: "reg", trans: "To touch/play", ctx: "piano" },
+            { inf: "Tomar", type: "reg", trans: "To take/drink", ctx: "café" },
+            { inf: "Toser", type: "reg", trans: "To cough", ctx: "mucho" },
+            { inf: "Traducir", type: "irr", trans: "To translate", ctx: "textos" },
+            { inf: "Traer", type: "irr", trans: "To bring", ctx: "regalos" },
+            { inf: "Viajar", type: "reg", trans: "To travel", ctx: "al extranjero" },
+            { inf: "Visitar", type: "reg", trans: "To visit", ctx: "museos" },
+            { inf: "Vivir", type: "reg", trans: "To live", ctx: "feliz" }
+        ].sort((a,b) => a.inf.localeCompare(b.inf));
+
+        const PERSONS = ["Yo", "Tú", "Él/Ella/Usted", "Nosotros", "Vosotros", "Ellos/Ellas/Ustedes"];
+
+        const TENSES = [
+            { id: "pres", label: "Presente Simple" },
+            { id: "pret", label: "Pretérito Indefinido" },
+            { id: "imp", label: "Pretérito Imperfecto" },
+            { id: "perf", label: "Pretérito Perfecto" },
+            { id: "fut", label: "Futuro Simple" },
+            { id: "cond", label: "Condicional Simple" },
+            { id: "sub_pres", label: "Presente Subjuntivo" },
+            { id: "sub_imp", label: "Imperfecto Subjuntivo" },
+            { id: "imp_comp", label: "Pretérito Pluscuamperfecto" },
+            { id: "fut_comp", label: "Futuro Compuesto" }
+        ];
+
+        const DIFFICULTIES = [
+            { id: 'easy', label: "Fácil 🟢", time: 22, desc: "Más regulares (+1 / -2 pts)" },
+            { id: 'medium', label: "Intermedio 🟡", time: 15, desc: "Mezcla (+2 / -1 pts)" },
+            { id: 'hard', label: "Difícil 🔴", time: 10, desc: "Más irregulares (+3 / -1 pts)" }
+        ];
+
+        const LEVELS = [
+            { threshold: 0, name: "Subterráneo", icon: "🕳️", theme: "theme-spain", country: "España" },
+            { threshold: 100, name: "Costa", icon: "🏖️", theme: "theme-mexico", country: "México" },
+            { threshold: 200, name: "Valle", icon: "🏞️", theme: "theme-argentina", country: "Argentina" },
+            { threshold: 300, name: "Cerro", icon: "⛰️", theme: "theme-peru", country: "Perú" },
+            { threshold: 400, name: "Montaña", icon: "🏔️", theme: "theme-colombia", country: "Colombia" },
+            { threshold: 500, name: "Cielo", icon: "☁️", theme: "theme-chile", country: "Chile" }
+        ];
+
+        const STREAK_BADGES = [
+            { id: 'first5', threshold: 5, name: 'Primeros Pasos', icon: '👶', description: '5 respuestas correctas seguidas' },
+            { id: 'steady10', threshold: 10, name: 'En Racha', icon: '🔥', description: '10 respuestas correctas seguidas' },
+            { id: 'onfire15', threshold: 15, name: 'En Llamas', icon: '🌋', description: '15 respuestas correctas seguidas' },
+            { id: 'unstoppable20', threshold: 20, name: 'Imparable', icon: '⚡', description: '20 respuestas correctas seguidas' },
+            { id: 'legendary25', threshold: 25, name: 'Legendario', icon: '👑', description: '25 respuestas correctas seguidas' },
+            { id: 'mythical30', threshold: 30, name: 'Mítico', icon: '🦄', description: '30 respuestas correctas seguidas' }
+        ];
+
+        const AVATARS = [
+            { id: 1, icon: "🗿", name: "Guerrero Maorí" },
+            { id: 2, icon: "🐊", name: "Cocodrilo" },
+            { id: 3, icon: "👹", name: "Samurái" },
+            { id: 4, icon: "📿", name: "Sacerdote" },
+            { id: 5, icon: "🪓", name: "Vikingo" },
+            { id: 6, icon: "👩‍🚀", name: "Astronauta" },
+            { id: 7, icon: "🤖", name: "Robot" },
+            { id: 8, icon: "🥷", name: "Ninja" },
+            { id: 9, icon: "🦁", name: "León" },
+            { id: 10, icon: "🐉", name: "Dragón" },
+            { id: 11, icon: "🦄", name: "Unicornio" },
+            { id: 12, icon: "👽", name: "Alien" },
+            { id: 13, icon: "👻", name: "Fantasma" },
+            { id: 14, icon: "🕵️‍♀️", name: "Detective" },
+            { id: 15, icon: "👨‍🔬", name: "Científico" },
+            { id: 16, icon: "🏴‍☠️", name: "Pirata" },
+            { id: 17, icon: "🧙‍♂️", name: "Mago" },
+            { id: 18, icon: "🦸", name: "Superhéroe" },
+            { id: 19, icon: "💀", name: "Esqueleto" },
+            { id: 20, icon: "👸", name: "Reina" },
+            { id: 21, icon: "🤺", name: "Torero" },
+            { id: 22, icon: "🏹", name: "Indígena" }
+        ];
+
+        // --- CONJUGATION ENGINE ---
+        const getEnding = (verb) => verb.endsWith("ar") ? "ar" : verb.endsWith("er") ? "er" : "ir";
+        const getStem = (verb) => verb.substring(0, verb.length - 2);
+
+        const IRREGULARS = {
+            "Haber": { pres: ["he", "has", "ha", "hemos", "habéis", "han"], pret: ["hube", "hubiste", "hubo", "hubimos", "hubisteis", "hubieron"], imp: ["había", "habías", "había", "habíamos", "habíais", "habían"], fut: ["habré", "habrás", "habrá", "habremos", "habréis", "habrán"], sub_pres: ["haya", "hayas", "haya", "hayamos", "hayáis", "hayan"], sub_imp: ["hubiera", "hubieras", "hubiera", "hubiéramos", "hubierais", "hubieran"] },
+            "Ser": { pres: ["soy", "eres", "es", "somos", "sois", "son"], pret: ["fui", "fuiste", "fue", "fuimos", "fuisteis", "fueron"], imp: ["era", "eras", "era", "éramos", "erais", "eran"], sub_pres: ["sea", "seas", "sea", "seamos", "seáis", "sean"], sub_imp: ["fuera", "fueras", "fuera", "fuéramos", "fuerais", "fueran"] },
+            "Ir": { pres: ["voy", "vas", "va", "vamos", "vais", "van"], pret: ["fui", "fuiste", "fue", "fuimos", "fuisteis", "fueron"], imp: ["iba", "ibas", "iba", "íbamos", "ibais", "iban"], sub_pres: ["vaya", "vayas", "vaya", "vayamos", "vayáis", "vayan"], sub_imp: ["fuera", "fueras", "fuera", "fuéramos", "fuerais", "fueran"] },
+            "Estar": { pres: ["estoy", "estás", "está", "estamos", "estáis", "están"], pret: ["estuve", "estuviste", "estuvo", "estuvimos", "estuvisteis", "estuvieron"], sub_pres: ["esté", "estés", "esté", "estemos", "estéis", "estén"], sub_imp: ["estuviera", "estuvieras", "estuviera", "estuviéramos", "estuvierais", "estuvieran"] },
+            "Tener": { pres: ["tengo", "tienes", "tiene", "tenemos", "tenéis", "tienen"], pret: ["tuve", "tuviste", "tuvo", "tuvimos", "tuvisteis", "tuvieron"], fut: ["tendré", "tendrás", "tendrá", "tendremos", "tendréis", "tendrán"], sub_pres: ["tenga", "tengas", "tenga", "tengamos", "tengáis", "tengan"], sub_imp: ["tuviera", "tuvieras", "tuviera", "tuviéramos", "tuvierais", "tuvieran"] },
+            "Hacer": { pres: ["hago", "haces", "hace", "hacemos", "hacéis", "hacen"], pret: ["hice", "hiciste", "hizo", "hicimos", "hicisteis", "hicieron"], fut: ["haré", "harás", "hará", "haremos", "haréis", "harán"], sub_pres: ["haga", "hagas", "haga", "hagamos", "hagáis", "hagan"], participio: "hecho" },
+            "Decir": { pres: ["digo", "dices", "dice", "decimos", "decís", "dicen"], pret: ["dije", "dijiste", "dijo", "dijimos", "dijisteis", "dijeron"], fut: ["diré", "dirás", "dirá", "diremos", "diréis", "dirán"], participio: "dicho", sub_imp: ["dijera", "dijeras", "dijera", "dijéramos", "dijerais", "dijeran"] },
+            "Ver": { pres: ["veo", "ves", "ve", "vemos", "veis", "ven"], imp: ["veía", "veías", "veía", "veíamos", "veíais", "veían"], participio: "visto" },
+            "Poner": { pres: ["pongo", "pones", "pone", "ponemos", "ponéis", "ponen"], pret: ["puse", "pusiste", "puso", "pusimos", "pusisteis", "pusieron"], fut: ["pondré", "pondrás", "pondrá", "pondremos", "pondréis", "pondrán"], participio: "puesto" },
+            "Poder": { pres: ["puedo", "puedes", "puede", "podemos", "podéis", "pueden"], pret: ["pude", "pudiste", "pudo", "pudimos", "pudisteis", "pudieron"], fut: ["podré", "podrás", "podrá", "podremos", "podréis", "podrán"], sub_pres: ["pueda", "puedas", "pueda", "podamos", "podáis", "puedan"] },
+            "Saber": { pres: ["sé", "sabes", "sabe", "sabemos", "sabéis", "saben"], pret: ["supe", "supiste", "supo", "supimos", "supisteis", "supieron"], fut: ["sabré", "sabrás", "sabrá", "sabremos", "sabréis", "sabrán"], sub_pres: ["sepa", "sepas", "sepa", "sepamos", "sepáis", "sepan"], sub_imp: ["supiera", "supieras", "supiera", "supiéramos", "supierais", "supieran"] },
+            "Querer": { pret: ["quise", "quisiste", "quiso", "quisimos", "quisisteis", "quisieron"], fut: ["querré", "querrás", "querrá", "querremos", "querréis", "querrán"], sub_imp: ["quisiera", "quisieras", "quisiera", "quisiéramos", "quisierais", "quisieran"] },
+            "Venir": { pres: ["vengo", "vienes", "viene", "venimos", "venís", "vienen"], pret: ["vine", "viniste", "vino", "vinimos", "vinisteis", "vinieron"], fut: ["vendré", "vendrás", "vendrá", "vendremos", "vendréis", "vendrán"], sub_pres: ["venga", "vengas", "venga", "vengamos", "vengáis", "vengan"], sub_imp: ["viniera", "vinieras", "viniera", "viniéramos", "vinierais", "vinieran"] },
+            "Oír": { pres: ["oigo", "oyes", "oye", "oímos", "oís", "oyen"], pret: ["oí", "oíste", "oyó", "oímos", "oísteis", "oyeron"], sub_pres: ["oiga", "oigas", "oiga", "oigamos", "oigáis", "oigan"], sub_imp: ["oyera", "oyeras", "oyera", "oyéramos", "oyerais", "oyeran"], participio: "oído" },
+            "Traer": { pres: ["traigo", "traes", "trae", "traemos", "traéis", "traen"], pret: ["traje", "trajiste", "trajo", "trajimos", "trajisteis", "trajeron"], sub_pres: ["traiga", "traigas", "traiga", "traigamos", "traigáis", "traigan"], sub_imp: ["trajera", "trajeras", "trajera", "trajéramos", "trajerais", "trajeran"] },
+            "Dar": { pres: ["doy", "das", "da", "damos", "dais", "dan"], pret: ["di", "diste", "dio", "dimos", "disteis", "dieron"], sub_pres: ["dé", "des", "dé", "demos", "deis", "den"], sub_imp: ["diera", "dieras", "diera", "diéramos", "dierais", "dieran"] },
+            "Caer": { pres: ["caigo", "caes", "cae", "caemos", "caéis", "caen"], pret: ["caí", "caíste", "cayó", "caímos", "caísteis", "cayeron"], sub_pres: ["caiga", "caigas", "caiga", "caigamos", "caigáis", "caigan"], sub_imp: ["cayera", "cayeras", "cayera", "cayéramos", "cayerais", "cayeran"], participio: "caído" },
+            "Leer": { pret: ["leí", "leíste", "leyó", "leímos", "leísteis", "leyeron"], sub_imp: ["leyera", "leyeras", "leyera", "leyéramos", "leyerais", "leyeran"], participio: "leído" },
+            "Creer": { pret: ["creí", "creíste", "creyó", "creímos", "creísteis", "creyeron"], sub_imp: ["creyera", "creyeras", "creyera", "creyéramos", "creyerais", "creyeran"], participio: "creído" },
+            "Andar": { pret: ["anduve", "anduviste", "anduvo", "anduvimos", "anduvisteis", "anduvieron"], sub_imp: ["anduviera", "anduvieras", "anduviera", "anduviéramos", "anduvierais", "anduvieran"] },
+            "Caber": { pres: ["quepo", "cabes", "cabe", "cabemos", "cabéis", "caben"], pret: ["cupe", "cupiste", "cupo", "cupimos", "cupisteis", "cupieron"], fut: ["cabré", "cabrás", "cabrá", "cabremos", "cabréis", "cabrán"], sub_pres: ["quepa", "quepas", "quepa", "quepamos", "quepáis", "quepan"], sub_imp: ["cupiera", "cupieras", "cupiera", "cupiéramos", "cupierais", "cupieran"] },
+            "Valer": { pres: ["valgo", "vales", "vale", "valemos", "valéis", "valen"], fut: ["valdré", "valdrás", "valdrá", "valdremos", "valdréis", "valdrán"], sub_pres: ["valga", "valgas", "valga", "valgamos", "valgáis", "valgan"] },
+            "Conducir": { pres: ["conduzco", "conduces", "conduce", "conducimos", "conducís", "conducen"], pret: ["conduje", "condujiste", "condujo", "condujimos", "condujisteis", "condujeron"], sub_pres: ["conduzca", "conduzcas", "conduzca", "conduzcamos", "conduzcáis", "conduzcan"], sub_imp: ["condujera", "condujeras", "condujera", "condujéramos", "condujerais", "condujeran"] },
+            "Traducir": { pres: ["traduzco", "traduces", "traduce", "traducimos", "traducís", "traducen"], pret: ["traduje", "tradujiste", "tradujo", "tradujimos", "tradujisteis", "tradujeron"], sub_pres: ["traduzca", "traduzcas", "traduzca", "traduzcamos", "traduzcáis", "traduzcan"], sub_imp: ["tradujera", "tradujeras", "tradujera", "tradujéramos", "tradujerais", "tradujeran"] },
+            "Elegir": { pres: ["elijo", "eliges", "elige", "elegimos", "elegís", "eligen"], pret: ["elegí", "elegiste", "eligió", "elegimos", "elegisteis", "eligieron"], sub_pres: ["elija", "elijas", "elija", "elijamos", "elijáis", "elijan"], sub_imp: ["eligiera", "eligieras", "eligiera", "eligiéramos", "eligierais", "eligieran"] },
+            "Seguir": { pres: ["sigo", "sigues", "sigue", "seguimos", "seguís", "siguen"], pret: ["seguí", "seguiste", "siguió", "seguimos", "seguisteis", "siguieron"], sub_pres: ["siga", "sigas", "siga", "sigamos", "sigáis", "sigan"], sub_imp: ["siguiera", "siguieras", "siguiera", "siguiéramos", "siguierais", "siguieran"] },
+            "Huir": { pres: ["huyo", "huyes", "huye", "huimos", "huís", "huyen"], pret: ["huí", "huiste", "huyó", "huimos", "huisteis", "huyeron"], sub_pres: ["huya", "huyas", "huya", "huyamos", "huyáis", "huyan"], sub_imp: ["huyera", "huyeras", "huyera", "huyéramos", "huyerais", "huyeran"], participio: "huido" },
+            "Construir": { pres: ["construyo", "construyes", "construye", "construimos", "construís", "construyen"], pret: ["construí", "construiste", "construyó", "construimos", "construisteis", "construyeron"], sub_pres: ["construya", "construyas", "construya", "construyamos", "construyáis", "construyan"], sub_imp: ["construyera", "construyeras", "construyera", "construyéramos", "construyerais", "construyeran"], participio: "construido" },
+            "Oler": { pres: ["huelo", "hueles", "huele", "olemos", "oléis", "huelen"], sub_pres: ["huela", "huelas", "huela", "olamos", "oláis", "huelan"] },
+            "Reír": { pres: ["río", "ríes", "ríe", "reímos", "reís", "ríen"], pret: ["reí", "reíste", "rio", "reímos", "reísteis", "rieron"], sub_pres: ["ría", "rías", "ría", "riamos", "riáis", "rían"], sub_imp: ["riera", "rieras", "riera", "riéramos", "rierais", "rieran"], participio: "reído" },
+            "Satisfacer": { pres: ["satisfago", "satisfaces", "satisface", "satisfacemos", "satisfacéis", "satisfacen"], pret: ["satisfice", "satisficiste", "satisfizo", "satisficimos", "satisficisteis", "satisficieron"], fut: ["satisfaré", "satisfarás", "satisfará", "satisfaremos", "satisfaréis", "satisfarán"], sub_pres: ["satisfaga", "satisfagas", "satisfaga", "satisfagamos", "satisfagáis", "satisfagan"], sub_imp: ["satisficiera", "satisficieras", "satisficiera", "satisficiéramos", "satisficierais", "satisficieran"], participio: "satisfecho" },
+            "Morir": { pret: ["morí", "moriste", "murió", "morimos", "moristeis", "murieron"], sub_pres: ["muera", "mueras", "muera", "muramos", "muráis", "mueran"], sub_imp: ["muriera", "murieras", "muriera", "muriéramos", "murierais", "murieran"], participio: "muerto" },
+            "Romper": { participio: "roto" },
+            "Descubrir": { participio: "descubierto" },
+            "Volar": { pres: ["vuelo", "vuelas", "vuela", "volamos", "voláis", "vuelan"], sub_pres: ["vuele", "vueles", "vuele", "volemos", "voléis", "vuelen"] },
+            "Contar": { pres: ["cuento", "cuentas", "cuenta", "contamos", "contáis", "cuentan"], sub_pres: ["cuente", "cuentes", "cuente", "contemos", "contéis", "cuenten"] },
+            "Resolver": { pres: ["resuelvo", "resuelves", "resuelve", "resolvemos", "resolvéis", "resuelven"], sub_pres: ["resuelva", "resuelvas", "resuelva", "resolvamos", "resolváis", "resuelvan"], participio: "resuelto" },
+            "Suponer": { pres: ["supongo", "supones", "supone", "suponemos", "suponéis", "suponen"], pret: ["supuse", "supusiste", "supuso", "supusimos", "supusisteis", "supusieron"], fut: ["supondré", "supondrás", "supondrá", "supondremos", "supondréis", "supondrán"], participio: "supuesto" },
+            "Proponer": { pres: ["propongo", "propones", "propone", "proponemos", "proponéis", "proponen"], pret: ["propuse", "propusiste", "propuso", "propusimos", "propusisteis", "propusieron"], fut: ["propondré", "propondrás", "propondrá", "propondremos", "propondréis", "propondrán"], participio: "propuesto" },
+            "Obtener": { pres: ["obtengo", "obtienes", "obtiene", "obtenemos", "obtenéis", "obtienen"], pret: ["obtuve", "obtuviste", "obtuvo", "obtuvimos", "obtuvisteis", "obtuvieron"], fut: ["obtendré", "obtendrás", "obtendrá", "obtendremos", "obtendréis", "obtendrán"], sub_pres: ["obtenga", "obtengas", "obtenga", "obtengamos", "obtengáis", "obtengan"], sub_imp: ["obtuviera", "obtuvieras", "obtuviera", "obtuviéramos", "obtuvierais", "obtuvieran"] },
+            "Mantener": { pres: ["mantengo", "mantienes", "mantiene", "mantenemos", "mantenéis", "mantienen"], pret: ["mantuve", "mantuviste", "mantuvo", "mantuvimos", "mantuvisteis", "mantuvieron"], fut: ["mantendré", "mantendrás", "mantendrá", "mantendremos", "mantendréis", "mantendrán"], sub_pres: ["mantenga", "mantengas", "mantenga", "mantengamos", "mantengáis", "mantengan"], sub_imp: ["mantuviera", "mantuvieras", "mantuviera", "mantuviéramos", "mantuvierais", "mantuvieran"] }
+        };
+
+        const conjugate = (verbObj, tenseId, personIdx) => {
+            const verb = verbObj.inf;
+            const ending = getEnding(verb);
+            let stem = getStem(verb);
+            
+            if (IRREGULARS[verb]) {
+                if (IRREGULARS[verb][tenseId]) return IRREGULARS[verb][tenseId][personIdx];
+                if (tenseId === 'perf' && IRREGULARS[verb]['participio']) {
+                    const aux = ["he", "has", "ha", "hemos", "habéis", "han"];
+                    return `${aux[personIdx]} ${IRREGULARS[verb]['participio']}`;
+                }
+            }
+
+            if (tenseId === 'pres') {
+                if (personIdx === 0 && verbObj.type === 'go') return stem + 'go';
+                if (personIdx === 0 && verbObj.type === 'zc') return stem.slice(0,-1) + 'zco';
+                let currentStem = stem;
+                if ((personIdx !== 3 && personIdx !== 4)) {
+                   if (verbObj.type === 'ie') currentStem = stem.replace(/e(?=[^e]*$)/, 'ie');
+                   if (verbObj.type === 'ue') currentStem = stem.replace(/o(?=[^o]*$)/, 'ue');
+                   if (verbObj.type === 'i') currentStem = stem.replace(/e(?=[^e]*$)/, 'i');
+                   if (verbObj.inf === 'Jugar') currentStem = 'jueg';
+                }
+                const endings = { ar: ["o", "as", "a", "amos", "áis", "an"], er: ["o", "es", "e", "emos", "éis", "en"], ir: ["o", "es", "e", "imos", "ís", "en"] };
+                return currentStem + endings[ending][personIdx];
+            }
+
+            if (tenseId === 'pret') {
+                const endings = { ar: ["é", "aste", "ó", "amos", "asteis", "aron"], er: ["í", "iste", "ió", "imos", "isteis", "ieron"], ir: ["í", "iste", "ió", "imos", "isteis", "ieron"] };
+                let currentStem = stem;
+                if (ending === 'ir' && (personIdx === 2 || personIdx === 5)) {
+                    if (verbObj.type === 'ue') currentStem = stem.replace(/o(?=[^o]*$)/, 'u');
+                    if (verbObj.type === 'i' || verbObj.type === 'ie') currentStem = stem.replace(/e(?=[^e]*$)/, 'i');
+                }
+                if (personIdx === 0) {
+                    if (verb.endsWith('car')) currentStem = stem.slice(0, -1) + 'qu';
+                    if (verb.endsWith('gar')) currentStem = stem.slice(0, -1) + 'gu';
+                    if (verb.endsWith('zar')) currentStem = stem.slice(0, -1) + 'c';
+                }
+                return currentStem + endings[ending][personIdx];
+            }
+
+            if (tenseId === 'imp') {
+                const endings = { ar: ["aba", "abas", "aba", "ábamos", "abais", "aban"], er: ["ía", "ías", "ía", "íamos", "íais", "ían"], ir: ["ía", "ías", "ía", "íamos", "íais", "ían"] };
+                return stem + endings[ending][personIdx];
+            }
+
+            if (tenseId === 'fut') {
+                const endings = ["é", "ás", "á", "emos", "éis", "án"];
+                return verb + endings[personIdx]; 
+            }
+
+            if (tenseId === 'perf') {
+                const aux = ["he", "has", "ha", "hemos", "habéis", "han"];
+                let part = "";
+                if (ending === 'ar') part = stem + 'ado'; else part = stem + 'ido';
+                if ((ending === 'er' || ending === 'ir') && ['a','e','o'].includes(stem.slice(-1))) part = stem + 'ído'; 
+                if (verb === "Abrir") part = "abierto";
+                if (verb === "Escribir") part = "escrito";
+                if (verb === "Volver") part = "vuelto";
+                if (verb === "Romper") part = "roto";
+                if (verb === "Morir") part = "muerto";
+                return `${aux[personIdx]} ${part}`;
+            }
+
+            if (tenseId === 'sub_pres') {
+                let presStem = stem;
+                const isBoot = (personIdx !== 3 && personIdx !== 4);
+                if (isBoot) {
+                    if (verbObj.type === 'ie') presStem = stem.replace(/e(?=[^e]*$)/, 'ie');
+                    if (verbObj.type === 'ue') presStem = stem.replace(/o(?=[^o]*$)/, 'ue');
+                    if (verbObj.type === 'i') presStem = stem.replace(/e(?=[^e]*$)/, 'i');
+                    if (verbObj.inf === 'Jugar') presStem = 'jueg'; 
+                    if (verbObj.type === 'zc') presStem = stem.slice(0, -1) + 'zc';
+                    if (verbObj.type === 'go') presStem = stem + 'g';
+                } else {
+                    if (ending === 'ir') {
+                         if (verbObj.type === 'ie' || verbObj.type === 'i') presStem = stem.replace(/e(?=[^e]*$)/, 'i'); 
+                         if (verbObj.type === 'ue') presStem = stem.replace(/o(?=[^o]*$)/, 'u'); 
+                         if (verbObj.inf === 'Dormir') presStem = 'durm';
+                    }
+                    if (verbObj.type === 'go') presStem = stem + 'g';
+                    if (verbObj.type === 'zc') presStem = stem.slice(0, -1) + 'zc';
+                }
+                const arEndings = ["e", "es", "e", "emos", "éis", "en"];
+                const erIrEndings = ["a", "as", "a", "amos", "áis", "an"];
+                const currentEnding = (ending === 'ar') ? arEndings[personIdx] : erIrEndings[personIdx];
+                let finalStem = presStem;
+                if (ending === 'ar') {
+                    if (verb.endsWith('car') && finalStem.endsWith('c')) finalStem = finalStem.slice(0,-1) + 'qu';
+                    if (verb.endsWith('gar') && finalStem.endsWith('g')) finalStem = finalStem + 'u'; 
+                    if (verb.endsWith('zar') && finalStem.endsWith('z')) finalStem = finalStem.slice(0,-1) + 'c';
+                }
+                return finalStem + currentEnding;
+            }
+
+            if (tenseId === 'sub_imp') {
+                let pret3pl = conjugate(verbObj, 'pret', 5);
+                let base = pret3pl.slice(0, -3); 
+                const endings = ["ra", "ras", "ra", "ramos", "rais", "ran"];
+                if (personIdx === 3) {
+                     let lastChar = base.slice(-1);
+                     let newBase = base.slice(0, -1);
+                     const vowels = {'a':'á', 'e':'é', 'i':'í', 'o':'ó', 'u':'ú'};
+                     if (vowels[lastChar]) lastChar = vowels[lastChar];
+                     return newBase + lastChar + endings[personIdx];
+                }
+                return base + endings[personIdx];
+            }
+
+            if (tenseId === 'cond') {
+                const endings = ["ía", "ías", "ía", "íamos", "íais", "ían"];
+                return verb + endings[personIdx];
+            }
+
+            if (tenseId === 'imp_comp') {
+                const aux = ["había", "habías", "había", "habíamos", "habíais", "habían"];
+                let part = "";
+                if (ending === 'ar') part = stem + 'ado'; else part = stem + 'ido';
+                if ((ending === 'er' || ending === 'ir') && ['a','e','o'].includes(stem.slice(-1))) part = stem + 'ído';
+                if (verb === "Abrir") part = "abierto";
+                if (verb === "Escribir") part = "escrito";
+                if (verb === "Volver") part = "vuelto";
+                if (verb === "Romper") part = "roto";
+                if (verb === "Morir") part = "muerto";
+                return `${aux[personIdx]} ${part}`;
+            }
+
+            if (tenseId === 'fut_comp') {
+                const aux = ["habré", "habrás", "habrá", "habremos", "habréis", "habrán"];
+                let part = "";
+                if (ending === 'ar') part = stem + 'ado'; else part = stem + 'ido';
+                if ((ending === 'er' || ending === 'ir') && ['a','e','o'].includes(stem.slice(-1))) part = stem + 'ído';
+                if (verb === "Abrir") part = "abierto";
+                if (verb === "Escribir") part = "escrito";
+                if (verb === "Volver") part = "vuelto";
+                if (verb === "Romper") part = "roto";
+                if (verb === "Morir") part = "muerto";
+                return `${aux[personIdx]} ${part}`;
+            }
+
+            return "Error";
+        };
+
+        // --- COMPONENTS ---
+
+        const WheelIcon = ({ spinning }) => (
+            <svg viewBox="0 0 100 100" className={`w-32 h-32 md:w-48 md:h-48 drop-shadow-xl ${spinning ? 'spin-animation' : 'transition-transform duration-700 ease-out'}`} style={{ transform: spinning ? 'rotate(0deg)' : `rotate(${Math.floor(Math.random() * 360)}deg)` }}>
+                <circle cx="50" cy="50" r="48" fill="currentColor" className="text-yellow-400" stroke="currentColor" className="text-red-600" strokeWidth="4" />
+                <path d="M50 50 L50 2 A48 48 0 0 1 95 35 Z" fill="currentColor" className="text-red-700" opacity="0.8" />
+                <path d="M50 50 L95 35 A48 48 0 0 1 80 88 Z" fill="currentColor" className="text-red-600" opacity="0.6" />
+                <path d="M50 50 L80 88 A48 48 0 0 1 20 88 Z" fill="currentColor" className="text-yellow-400" />
+                <path d="M50 50 L20 88 A48 48 0 0 1 5 35 Z" fill="currentColor" className="text-red-700" opacity="0.8" />
+                <path d="M50 50 L5 35 A48 48 0 0 1 50 2 Z" fill="currentColor" className="text-yellow-500" />
+                <circle cx="50" cy="50" r="10" fill="#fff" stroke="currentColor" className="text-red-600" strokeWidth="2" />
+                <path d="M45 0 L55 0 L50 15 Z" fill="#333" />
+            </svg>
+        );
+
+        const ClockIcon = ({ timeLeft }) => (
+            <div className={`text-4xl ${timeLeft <= 3 ? 'text-red-600 clock-shake' : 'text-gray-400'}`}>
+                ⏰
+            </div>
+        );
+
+        const FeedbackCharacter = ({ type }) => {
+            if (type === 'correct') {
+                return <div className="text-6xl animate-bounce mb-2 filter drop-shadow-lg transform transition-transform duration-500 hover:scale-110">👼</div>;
+            }
+            return <div className="text-6xl animate-pulse mb-2 filter drop-shadow-lg transform transition-transform duration-500 hover:scale-110">😈</div>;
+        };
+
+        const AudioButton = ({ text }) => {
+            const speak = () => {
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = 'es-ES';
+                window.speechSynthesis.speak(u);
+            };
+            return (
+                <button onClick={speak} className="p-2 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-600 transition ml-2" title="Escuchar">
+                    🔊
+                </button>
+            );
+        };
+
+        const BadgeNotification = ({ badge, onClose }) => {
+            if (!badge) return null;
+            return (
+                <div className="fixed top-4 right-4 z-50 animate-in bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-xl shadow-2xl p-4 flex items-center gap-3 border-4 border-yellow-300">
+                    <div className="text-4xl animate-bounce">{badge.icon}</div>
+                    <div>
+                        <div className="font-black text-lg">¡Nuevo Logro!</div>
+                        <div className="font-bold">{badge.name}</div>
+                        <div className="text-sm opacity-90">{badge.description}</div>
+                    </div>
+                    <button onClick={onClose} className="text-white hover:text-yellow-200 text-2xl">×</button>
+                </div>
+            );
+        };
+
+        const StreakBadges = ({ badges }) => {
+            const earnedBadges = STREAK_BADGES.filter(badge => badges.includes(badge.id));
+            if (earnedBadges.length === 0) return null;
+            
+            return (
+                <div className="flex gap-1 flex-wrap justify-center">
+                    {earnedBadges.map(badge => (
+                        <div key={badge.id} className="text-2xl animate-pulse" title={`${badge.name}: ${badge.description}`}>
+                            {badge.icon}
+                        </div>
+                    ))}
+                </div>
+            );
+        };
+
+        const speakText = (text) => {
+            const u = new SpeechSynthesisUtterance(text);
+            u.lang = 'es-ES';
+            window.speechSynthesis.speak(u);
+        };
+
+        const ComboDisplay = ({ combo }) => {
+            if (combo < 2) return null;
+            return (
+                <div className="absolute top-0 right-0 m-2 flex items-center gap-1 animate-in pop-anim">
+                    <span className="text-2xl">🔥</span>
+                    <span className="text-xl font-black text-orange-500 italic">x{Math.min(1 + Math.floor(combo / 3), 3)}</span>
+                </div>
+            );
+        };
+
+        const ProfileSetup = ({ onComplete, initialData }) => {
+            const [name, setName] = useState(initialData?.name || "");
+            const [selectedAvatar, setSelectedAvatar] = useState(initialData?.avatar || null);
+
+            const handleSubmit = () => {
+                if (name.trim() && selectedAvatar) {
+                    onComplete({ name, avatar: selectedAvatar });
+                }
+            };
+
+            return (
+                <div className="absolute inset-0 bg-white z-50 flex flex-col items-center justify-center p-4 animate-in">
+                    <h1 className="text-3xl font-black text-red-600 mb-6 uppercase tracking-wider text-center">{initialData ? 'Editar Perfil' : '¡Bienvenido!'}</h1>
+                    <div className="w-full max-w-md bg-gray-50 p-6 rounded-2xl shadow-lg border-2 border-gray-200">
+                        <label className="block text-sm font-bold text-gray-500 mb-2">¿Cómo te llamas?</label>
+                        <input 
+                            type="text" 
+                            className="w-full p-3 rounded-xl border-2 border-gray-300 focus:border-red-500 outline-none mb-6 text-lg font-bold text-center"
+                            placeholder="Tu nombre"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                        />
+                        
+                        <label className="block text-sm font-bold text-gray-500 mb-2">Elige tu Avatar</label>
+                        <div className="grid grid-cols-5 gap-2 mb-8 max-h-60 overflow-y-auto p-2">
+                            {AVATARS.map(av => (
+                                <button 
+                                    key={av.id}
+                                    onClick={() => setSelectedAvatar(av)}
+                                    className={`text-3xl p-2 rounded-lg transition transform hover:scale-110 ${selectedAvatar?.id === av.id ? 'bg-yellow-200 ring-2 ring-yellow-400' : 'bg-white border hover:bg-gray-100'}`}
+                                    title={av.name}
+                                >
+                                    {av.icon}
+                                </button>
+                            ))}
+                        </div>
+
+                        <button 
+                            onClick={handleSubmit}
+                            disabled={!name.trim() || !selectedAvatar}
+                            className="w-full py-4 bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl shadow-lg transition text-xl"
+                        >
+                            {initialData ? 'Guardar Cambios' : '¡Comenzar Aventura!'}
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- LEVEL & THEME LOGIC ---
+        const getCurrentLevel = (score) => LEVELS.slice().reverse().find(l => score >= l.threshold) || LEVELS[0];
+        const getNextLevel = (score) => LEVELS.find(l => l.threshold > score) || { threshold: score, name: "Máximo", icon: "🏆" };
+
+        const ScoreBoard = ({ score, attempts, currentTheme, unlockedThemes, setCustomTheme, userProfile, onEditProfile, streakBadges = [] }) => {
+            const currentLevel = getCurrentLevel(score);
+            const nextLevel = getNextLevel(score);
+            const pointsToNext = nextLevel.threshold !== score ? nextLevel.threshold - score : 0;
+
+            // Check for new unlocks
+            useEffect(() => {
+                if (score >= currentLevel.threshold && !unlockedThemes.includes(currentLevel.theme)) {
+                    // Unlock logic handled in parent usually, but simple visual feedback here
+                }
+            }, [score]);
+
+            return (
+                <div className="w-full max-w-5xl px-4 mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-white rounded-xl p-3 shadow-md flex items-center justify-between border-2 border-gray-100">
+                        <div className="flex items-center gap-3">
+                            <div className="text-4xl">{currentLevel.icon}</div>
+                            <div>
+                                <div className="text-xs font-bold uppercase text-gray-400">Nivel Actual</div>
+                                <div className="font-black text-lg leading-none text-gray-800">{currentLevel.name}</div>
+                                {pointsToNext > 0 ? (
+                                    <div className="text-[10px] text-gray-500 mt-1 font-medium">Faltan {pointsToNext} pts para {nextLevel.name}</div>
+                                ) : <div className="text-[10px] text-green-500 font-bold">¡Nivel Máximo!</div>}
+                            </div>
+                        </div>
+                        {/* Theme Selector Small */}
+                        <div className="flex gap-1">
+                            {LEVELS.map((l, idx) => (
+                                <button 
+                                    key={idx}
+                                    disabled={score < l.threshold}
+                                    onClick={() => setCustomTheme(l.theme)}
+                                    className={`w-6 h-6 rounded-full border border-gray-300 ${l.theme} ${score < l.threshold ? 'opacity-20 grayscale cursor-not-allowed' : 'hover:scale-110 cursor-pointer shadow-sm'} ${currentTheme === l.theme ? 'ring-2 ring-blue-500 ring-offset-1' : ''}`}
+                                    title={score < l.threshold ? `Desbloquea en ${l.threshold} pts` : l.country}
+                                ></button>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-200 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="text-3xl bg-gray-100 rounded-full p-1 border border-gray-200">{userProfile?.avatar?.icon || '👤'}</div>
+                            <div className="flex flex-col">
+                                <span className="text-xs font-bold text-gray-400 uppercase">Jugador <button onClick={onEditProfile} className="text-blue-500 hover:text-blue-700 ml-1" title="Editar Perfil">✏️</button></span>
+                                <span className="font-bold text-gray-700 leading-none">{userProfile?.name || 'Invitado'}</span>
+                                {streakBadges.length > 0 && <StreakBadges badges={streakBadges} />}
+                            </div>
+                        </div>
+                        <div className="flex flex-col items-end">
+                            <div className="text-xs font-bold text-gray-400 uppercase">Puntuación</div>
+                            <div className="text-3xl font-black text-red-600">
+                                {score} <span className="text-gray-300 text-sm font-medium">/ {attempts}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const TenseSelector = ({ selectedTenses, setSelectedTenses }) => {
+            const toggleTense = (id) => {
+                const newSet = new Set(selectedTenses);
+                if (newSet.has(id)) {
+                    if (newSet.size > 1) newSet.delete(id); 
+                } else {
+                    newSet.add(id);
+                }
+                setSelectedTenses(newSet);
+            };
+            const toggleAll = () => {
+                if (selectedTenses.size === TENSES.length) setSelectedTenses(new Set([TENSES[0].id])); 
+                else setSelectedTenses(new Set(TENSES.map(t => t.id)));
+            };
+            return (
+                <div className="bg-white p-3 rounded-xl border-2 border-yellow-400 shadow-sm w-full max-w-xs">
+                    <div className="flex justify-between items-center mb-2">
+                        <label className="text-xs font-bold text-gray-400 uppercase">Tiempos Activos</label>
+                        <button onClick={toggleAll} className="text-[10px] bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded text-gray-600 font-bold">
+                            {selectedTenses.size === TENSES.length ? 'Ninguno' : 'Todos'}
+                        </button>
+                    </div>
+                    <div className="flex flex-col gap-1 max-h-32 overflow-y-auto pr-1">
+                        {TENSES.map(t => (
+                            <label key={t.id} className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-yellow-50 cursor-pointer transition-colors">
+                                <input type="checkbox" checked={selectedTenses.has(t.id)} onChange={() => toggleTense(t.id)} className="w-4 h-4 text-red-600 rounded focus:ring-red-500 border-gray-300 cursor-pointer" />
+                                <span className={`text-xs font-bold ${selectedTenses.has(t.id) ? 'text-gray-800' : 'text-gray-400'}`}>{t.label}</span>
+                            </label>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+        
+        const DifficultySelector = ({ selectedDifficulty, setSelectedDifficulty }) => {
+            return (
+                <div className="bg-white p-3 rounded-xl border-2 border-blue-400 shadow-sm w-full max-w-xs">
+                    <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Dificultad</label>
+                    <div className="flex flex-col gap-1">
+                        {DIFFICULTIES.map(d => (
+                            <label key={d.id} className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${selectedDifficulty.id === d.id ? 'bg-blue-100 border border-blue-200' : 'hover:bg-gray-50 border border-transparent'}`}>
+                                <input 
+                                    type="radio" 
+                                    name="difficulty"
+                                    checked={selectedDifficulty.id === d.id}
+                                    onChange={() => setSelectedDifficulty(d)}
+                                    className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300 cursor-pointer"
+                                />
+                                <div className="flex flex-col">
+                                    <span className="text-sm font-bold text-gray-800">{d.label}</span>
+                                    <span className="text-[10px] text-gray-500">{d.desc}</span>
+                                </div>
+                            </label>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+
+        const PauseModal = ({ onResume, count, score }) => {
+            const currentLevel = getCurrentLevel(score);
+            const nextLevel = getNextLevel(score);
+            const pointsToNext = nextLevel.threshold > score ? nextLevel.threshold - score : 0;
+            return (
+                <div className="absolute inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center animate-in p-4">
+                    <div className="bg-white rounded-2xl p-8 shadow-2xl max-w-md w-full text-center border-4 border-yellow-400">
+                        <div className="text-6xl mb-2">☕</div>
+                        <h2 className="text-2xl font-black text-gray-800 mb-2">¡Tiempo de Respiro!</h2>
+                        <p className="text-gray-500 mb-6">Has completado {count} ejercicios.</p>
+                        <div className="bg-gray-50 rounded-xl p-4 mb-6 border border-gray-100">
+                            <div className="text-sm text-gray-400 uppercase font-bold mb-1">Tu Progreso</div>
+                            <div className="flex justify-center items-center gap-2 text-xl font-black text-gray-700 mb-2"><span>{currentLevel.icon}</span> {currentLevel.name}</div>
+                            {pointsToNext > 0 ? (<p className="text-sm text-gray-600">¡Solo faltan <span className="font-bold text-red-500">{pointsToNext} puntos</span> para el nivel {nextLevel.name}!</p>) : (<p className="text-sm text-green-600 font-bold">¡Has alcanzado el nivel máximo!</p>)}
+                        </div>
+                        <button onClick={onResume} className="w-full py-3 bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl shadow-lg transition transform active:scale-95">Continuar Jugando</button>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- GAME SECTION ---
+        const GameSection = ({ score, setScore, attempts, setAttempts, combo, setCombo, errors, setErrors, currentTheme, unlockedThemes, setCustomTheme, timeAttackMode, setTimeAttackMode, userProfile, onEditProfile }) => {
+            const [currentVerb, setCurrentVerb] = useState(VERBS[0]);
+            const [currentTense, setCurrentTense] = useState(TENSES[0]);
+            const [currentPerson, setCurrentPerson] = useState(0);
+            const [isSpinning, setIsSpinning] = useState(false);
+            const [showAnswer, setShowAnswer] = useState(false);
+            const [selectedTenses, setSelectedTenses] = useState(new Set(TENSES.map(t => t.id))); 
+            const [selectedDifficulty, setSelectedDifficulty] = useState(DIFFICULTIES[1]); // Default Medium
+            const [lockVerb, setLockVerb] = useState(false);
+            const [userInput, setUserInput] = useState("");
+            const [feedback, setFeedback] = useState(null);
+            const [timeLeft, setTimeLeft] = useState(timeAttackMode ? 60 : selectedDifficulty.time);
+            const [questionsAnswered, setQuestionsAnswered] = useState(0);
+            const [isPaused, setIsPaused] = useState(false);
+            const [hasStarted, setHasStarted] = useState(false);
+            const [gameOver, setGameOver] = useState(false);
+            const [reviewMode, setReviewMode] = useState(false); 
+            const [streakBadges, setStreakBadges] = useState(() => {
+                const saved = localStorage.getItem('streakBadges');
+                return saved ? JSON.parse(saved) : [];
+            });
+            const [showBadgeNotification, setShowBadgeNotification] = useState(null);
+            const [immediateFeedback, setImmediateFeedback] = useState(() => {
+                const saved = localStorage.getItem('ruletaVerbosImmediateFeedback');
+                return saved !== null ? JSON.parse(saved) : true;
+            }); // Toggle for immediate feedback
+
+            useEffect(() => {
+                localStorage.setItem('ruletaVerbosImmediateFeedback', JSON.stringify(immediateFeedback));
+            }, [immediateFeedback]);
+
+            const timerRef = useRef(null);
+            const inputRef = useRef(null);
+
+            // Streak Badge Milestones
+            // Check for new badges
+            useEffect(() => {
+                const newBadges = STREAK_BADGES.filter(badge => 
+                    combo >= badge.threshold && !streakBadges.includes(badge.id)
+                );
+                
+                if (newBadges.length > 0) {
+                    const updatedBadges = [...streakBadges, ...newBadges.map(b => b.id)];
+                    setStreakBadges(updatedBadges);
+                    localStorage.setItem('streakBadges', JSON.stringify(updatedBadges));
+                    
+                    // Show notification for the latest badge
+                    setShowBadgeNotification(newBadges[newBadges.length - 1]);
+                    setTimeout(() => setShowBadgeNotification(null), 3000);
+                }
+            }, [combo, streakBadges]);
+
+            // Timer Logic
+            useEffect(() => {
+                if (gameOver) return;
+                
+                // Normal Mode Timer
+                if (!timeAttackMode && hasStarted && !isSpinning && !showAnswer && !isPaused && timeLeft > 0) {
+                    timerRef.current = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+                } 
+                else if (!timeAttackMode && hasStarted && timeLeft === 0 && !showAnswer && !isSpinning && !isPaused) {
+                    handleTimeout();
+                }
+                // Time Attack Timer (Global)
+                else if (timeAttackMode && hasStarted && !isPaused && timeLeft > 0) {
+                    timerRef.current = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+                }
+                else if (timeAttackMode && hasStarted && timeLeft === 0 && !gameOver) {
+                    setGameOver(true);
+                }
+
+                return () => clearTimeout(timerRef.current);
+            }, [timeLeft, isSpinning, showAnswer, isPaused, hasStarted, timeAttackMode, gameOver]);
+
+            // Reset Time Attack when toggling mode
+            useEffect(() => {
+                if (timeAttackMode) {
+                    setTimeLeft(60);
+                    setHasStarted(false);
+                    setGameOver(false);
+                } else {
+                    setTimeLeft(selectedDifficulty.time);
+                }
+            }, [timeAttackMode, selectedDifficulty]); // Update when difficulty changes too
+
+            const getImmediateFeedback = (input, correct) => {
+                if (!immediateFeedback || input.length === 0) return null;
+                const inputLower = input.toLowerCase();
+                const correctLower = correct.toLowerCase();
+                const normalize = (text) => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                const inputNorm = normalize(inputLower);
+                const correctNorm = normalize(correctLower);
+                
+                // If completely correct, show success
+                if (inputLower === correctLower) {
+                    return { type: 'correct', message: '¡Perfecto!' };
+                }
+
+                // If only accents are missing or wrong
+                if (inputNorm === correctNorm) {
+                    return { type: 'hint', message: `Revisa los acentos: debería ser '${correct}'`, fullCorrect: correct };
+                }
+
+                // If input matches the beginning, show hint about the rest
+                if (correctNorm.startsWith(inputNorm)) {
+                    const remaining = correctLower.slice(inputLower.length);
+                    return { type: 'hint', message: `Buen inicio. Sigue con '${remaining}'`, fullCorrect: correct };
+                }
+
+                // If reflexive ending is missing and the rest is correct
+                if (correctLower.endsWith('se') && inputNorm === normalize(correctLower.slice(0, -2))) {
+                    return { type: 'hint', message: `No olvides el reflexivo 'se' al final`, fullCorrect: correct };
+                }
+
+                // If wrong, give a better suggestion based on shared letters
+                const sameLetters = inputLower.split('').filter((char, idx) => correctLower[idx] === char).length;
+                const suggestion = sameLetters >= 2 ? 'Buena base: revisa la terminación.' : 'Revisa los acentos y la terminación.';
+                return { type: 'error', message: correct, suggestion };
+            };
+
+            const handleInputChange = (value) => {
+                setUserInput(value);
+                
+                if (immediateFeedback && !showAnswer) {
+                    const correct = conjugate(currentVerb, currentTense.id, currentPerson);
+                    const feedback = getImmediateFeedback(value, correct);
+                    // Could add visual feedback here if needed
+                }
+            };
+            
+            const getVerbPool = () => {
+                let pool = VERBS;
+                if (selectedDifficulty.id === 'easy') {
+                    // 70% chance regular, 30% chance irregular
+                     if (Math.random() < 0.7) {
+                        const regularVerbs = VERBS.filter(v => v.type === 'reg');
+                        if (regularVerbs.length > 0) pool = regularVerbs;
+                    } 
+                } else if (selectedDifficulty.id === 'hard') {
+                    // 70% chance irregular, 30% regular
+                    if (Math.random() < 0.7) {
+                        const irregularVerbs = VERBS.filter(v => v.type !== 'reg');
+                        if (irregularVerbs.length > 0) pool = irregularVerbs;
+                    }
+                }
+                // Medium is just full pool (random)
+                return pool;
+            };
+
+            const getScoreDelta = (difficulty, isCorrect) => {
+                switch(difficulty) {
+                    case 'hard': return isCorrect ? 3 : -1;
+                    case 'medium': return isCorrect ? 2 : -1;
+                    case 'easy': default: return isCorrect ? 1 : -2;
+                }
+            };
+
+
+            const spin = () => {
+                if (isSpinning) return;
+                setHasStarted(true);
+                setShowAnswer(false);
+                setFeedback(null);
+                setUserInput("");
+                if (!timeAttackMode) setTimeLeft(selectedDifficulty.time); 
+                setIsSpinning(true);
+
+                setTimeout(() => {
+                    let nextVerb = currentVerb;
+                    let nextTense = currentTense;
+                    let nextPerson = Math.floor(Math.random() * 6);
+
+                    if (reviewMode && errors.length > 0) {
+                        const err = errors[Math.floor(Math.random() * errors.length)];
+                        nextVerb = err.verb;
+                        nextTense = err.tense;
+                        nextPerson = err.person;
+                    } else {
+                        if (!lockVerb) {
+                            const pool = getVerbPool();
+                            nextVerb = pool[Math.floor(Math.random() * pool.length)];
+                        }
+                        
+                        const availableTenses = TENSES.filter(t => selectedTenses.has(t.id));
+                        const tensePool = availableTenses.length > 0 ? availableTenses : TENSES;
+                        nextTense = tensePool[Math.floor(Math.random() * tensePool.length)];
+                    }
+
+                    setCurrentVerb(nextVerb);
+                    setCurrentTense(nextTense);
+                    setCurrentPerson(nextPerson);
+                    setIsSpinning(false);
+                    setTimeout(() => { if (inputRef.current) inputRef.current.focus(); }, 100);
+                }, 800);
+            };
+
+            const handlePauseCheck = () => {
+                if (timeAttackMode) return; 
+                const newCount = questionsAnswered + 1;
+                setQuestionsAnswered(newCount);
+                if (newCount > 0 && newCount % 10 === 0) {
+                    setIsPaused(true);
+                } else {
+                    setTimeout(() => spin(), 2500);
+                }
+            };
+
+            const handleTimeout = () => {
+                setShowAnswer(true);
+                setFeedback('incorrect');
+                setAttempts(prev => prev + 1);
+                
+                const penalty = getScoreDelta(selectedDifficulty.id, false);
+                setScore(prev => Math.max(0, prev + penalty));
+
+                setCombo(0);
+                
+                const exists = errors.find(e => e.verb.inf === currentVerb.inf && e.tense.id === currentTense.id && e.person === currentPerson);
+                if (!exists) setErrors(prev => [...prev, { verb: currentVerb, tense: currentTense, person: currentPerson }]);
+
+                const correctAnswer = conjugate(currentVerb, currentTense.id, currentPerson);
+                speakText(correctAnswer);
+
+                handlePauseCheck();
+            };
+
+            const checkAnswer = () => {
+                const correct = conjugate(currentVerb, currentTense.id, currentPerson).toLowerCase().trim();
+                const user = userInput.toLowerCase().trim();
+                
+                setShowAnswer(true);
+                setAttempts(prev => prev + 1);
+
+                if (user === correct) {
+                    setFeedback('correct');
+                    const multiplier = getMultiplier();
+                    
+                    const basePoints = getScoreDelta(selectedDifficulty.id, true);
+                    setScore(prev => Math.max(0, prev + (basePoints * multiplier)));
+
+                    setCombo(prev => prev + 1);
+                    
+                    if (timeAttackMode) setTimeLeft(prev => prev + 3);
+
+                    if (reviewMode) {
+                        setErrors(prev => prev.filter(e => !(e.verb.inf === currentVerb.inf && e.tense.id === currentTense.id && e.person === currentPerson)));
+                        if (errors.length <= 1) setReviewMode(false); 
+                    }
+
+                } else {
+                    setFeedback('incorrect');
+                    
+                    const penalty = getScoreDelta(selectedDifficulty.id, false);
+                    setScore(prev => Math.max(0, prev + penalty));
+                    
+                    setCombo(0);
+                    
+                    if (timeAttackMode) setTimeLeft(prev => Math.max(0, prev - 5));
+
+                    const exists = errors.find(e => e.verb.inf === currentVerb.inf && e.tense.id === currentTense.id && e.person === currentPerson);
+                    if (!exists) setErrors(prev => [...prev, { verb: currentVerb, tense: currentTense, person: currentPerson }]);
+                }
+                
+                const correctAnswer = conjugate(currentVerb, currentTense.id, currentPerson);
+                speakText(correctAnswer);
+
+                if (timeAttackMode && !gameOver) {
+                    setTimeout(() => spin(), 1500); 
+                } else if (!timeAttackMode) {
+                    handlePauseCheck();
+                }
+            };
+
+            const handleKeyDown = (e) => {
+                if (e.key === 'Enter' && !showAnswer && !isSpinning && !gameOver) checkAnswer();
+            };
+
+            if (gameOver) {
+                return (
+                    <div className="flex flex-col items-center justify-center h-full animate-in text-center p-8">
+                        <div className="text-6xl mb-4">🏁</div>
+                        <h2 className="text-3xl font-black text-gray-800 mb-2">¡Tiempo Terminado!</h2>
+                        <p className="text-xl text-gray-600 mb-6">Puntuación Final: <span className="font-bold text-red-600">{score}</span></p>
+                        <button onClick={() => { setScore(0); setAttempts(0); setTimeLeft(60); setGameOver(false); setHasStarted(false); }} className="px-8 py-3 bg-red-600 text-white font-bold rounded-full shadow-lg">Jugar Otra Vez</button>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="flex flex-col items-center w-full animate-in relative">
+                    <BadgeNotification badge={showBadgeNotification} onClose={() => setShowBadgeNotification(null)} />
+                    {isPaused && <PauseModal onResume={() => { setIsPaused(false); spin(); }} count={questionsAnswered} score={score} />}
+                    <ScoreBoard score={score} attempts={attempts} currentTheme={currentTheme} unlockedThemes={unlockedThemes} setCustomTheme={setCustomTheme} userProfile={userProfile} onEditProfile={onEditProfile} streakBadges={streakBadges} />
+
+                    <div className="flex-grow w-full max-w-6xl flex flex-col md:flex-row items-center justify-center gap-8 md:gap-12">
+                        
+                        {/* LEFT: CONTROLS */}
+                        <div className="flex flex-col items-center gap-4 order-2 md:order-1 w-full md:w-1/3">
+                            <DifficultySelector selectedDifficulty={selectedDifficulty} setSelectedDifficulty={setSelectedDifficulty} />
+                            
+                            <TenseSelector selectedTenses={selectedTenses} setSelectedTenses={setSelectedTenses} />
+                            
+                            <div className="flex flex-wrap justify-center gap-2 w-full max-w-xs">
+                                <div className="flex items-center gap-2 bg-white p-2 rounded-lg border border-gray-200 shadow-sm cursor-pointer" onClick={() => setLockVerb(!lockVerb)}>
+                                    <input type="checkbox" checked={lockVerb} onChange={() => {}} className="w-4 h-4 text-red-600 rounded" />
+                                    <label className="text-xs font-bold text-gray-600 select-none cursor-pointer">🔒 Mismo verbo</label>
+                                </div>
+                                <div className={`flex items-center gap-2 p-2 rounded-lg border shadow-sm cursor-pointer ${timeAttackMode ? 'bg-red-50 border-red-200' : 'bg-white border-gray-200'}`} onClick={() => setTimeAttackMode(!timeAttackMode)}>
+                                    <span className="text-xs font-bold text-gray-600 select-none">⚡ Contrarreloj</span>
+                                </div>
+                                <div className={`flex items-center gap-2 p-2 rounded-lg border shadow-sm cursor-pointer ${immediateFeedback ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-200'}`} onClick={() => setImmediateFeedback(!immediateFeedback)}>
+                                    <span className="text-xs font-bold text-gray-600 select-none">💡 Ayuda inmediata: {immediateFeedback ? 'ON' : 'OFF'}</span>
+                                </div>
+                            </div>
+
+                            {errors.length > 0 && (
+                                <button 
+                                    onClick={() => setReviewMode(!reviewMode)}
+                                    className={`w-full max-w-xs py-2 px-4 rounded-lg text-xs font-bold border-2 transition ${reviewMode ? 'bg-orange-100 border-orange-400 text-orange-700' : 'bg-white border-gray-200 text-gray-500'}`}
+                                >
+                                    {reviewMode ? 'Modo: Repasando Fallos' : `Practicar ${errors.length} Fallos`}
+                                </button>
+                            )}
+
+                            <div className="relative group cursor-pointer mt-2 hidden md:block" onClick={spin}>
+                                <WheelIcon spinning={isSpinning} />
+                            </div>
+                            
+                            <button onClick={spin} disabled={isSpinning || showAnswer} className={`w-full max-w-xs py-3 px-6 rounded-full shadow-lg font-bold text-white transition transform active:scale-95 ${timeAttackMode && hasStarted ? 'hidden' : 'block bg-red-600 hover:bg-red-700 border-b-4 border-red-800'}`}>
+                                {showAnswer ? 'Siguiente...' : (hasStarted ? 'Siguiente Verbo' : '¡Empezar!')}
+                            </button>
+                        </div>
+
+                        {/* RIGHT: CARD */}
+                        <div className="w-full max-w-md order-1 md:order-2">
+                            <div className={`relative w-full transition-all duration-300 transform ${isSpinning ? 'scale-95 opacity-80' : 'scale-100 opacity-100'}`}>
+                                <ComboDisplay combo={combo} />
+                                <div className="bg-white rounded-2xl shadow-2xl border-4 border-yellow-400 overflow-hidden flex flex-col relative min-h-[350px]">
+                                    
+                                    {/* Timer Bar */}
+                                    {!showAnswer && !isSpinning && hasStarted && (
+                                        <div className={`absolute top-0 left-0 h-2 z-10 timer-bar ${timeAttackMode && timeLeft < 10 ? 'bg-red-600 animate-pulse' : 'bg-red-500'}`} style={{width: `${(timeLeft / (timeAttackMode ? 60 : selectedDifficulty.time)) * 100}%`}}></div>
+                                    )}
+
+                                    <div className="h-3 w-full bg-red-600"></div>
+                                    <div className="p-6 text-center space-y-4 flex-1 flex flex-col justify-center">
+                                        
+                                        {!hasStarted ? (
+                                            <div className="py-10 text-gray-400 italic">
+                                                <div className="text-4xl mb-2">👋</div>
+                                                Configura tus opciones y<br/>pulsa <b>Empezar</b>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <div className="inline-block bg-yellow-100 text-yellow-800 px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider">{currentTense.label}</div>
+                                                <div className="py-2">
+                                                    <p className="text-gray-500 font-bold text-lg">{PERSONS[currentPerson]}</p>
+                                                    <h2 className="text-5xl font-black text-gray-800 my-1">{currentVerb.inf}</h2>
+                                                    <p className="text-red-400 font-medium italic text-lg">{currentVerb.trans}</p>
+                                                </div>
+                                                <div className="w-full pt-2">
+                                                    {!showAnswer ? (
+                                                        <div className="space-y-3">
+                                                            <div className="relative">
+                                                                <input 
+                                                                    ref={inputRef} 
+                                                                    type="text" 
+                                                                    value={userInput} 
+                                                                    onChange={(e) => handleInputChange(e.target.value)} 
+                                                                    onKeyDown={handleKeyDown} 
+                                                                    placeholder="Escribe la conjugación..." 
+                                                                    className={`w-full p-3 text-center text-xl border-2 rounded-xl focus:outline-none transition-colors ${
+                                                                        immediateFeedback && userInput ? 
+                                                                            (() => {
+                                                                                const correct = conjugate(currentVerb, currentTense.id, currentPerson);
+                                                                                const feedback = getImmediateFeedback(userInput, correct);
+                                                                                if (feedback?.type === 'correct') return 'border-green-500 bg-green-50';
+                                                                                if (feedback?.type === 'hint') return 'border-blue-500 bg-blue-50';
+                                                                                if (feedback?.type === 'error') return 'border-red-500 bg-red-50';
+                                                                                return 'border-gray-200';
+                                                                            })()
+                                                                        : 'border-gray-200 focus:border-red-500'
+                                                                    }`} 
+                                                                    autoComplete="off" 
+                                                                    autoCorrect="off" 
+                                                                    autoCapitalize="none" 
+                                                                />
+                                                                {immediateFeedback && userInput && (() => {
+                                                                    const correct = conjugate(currentVerb, currentTense.id, currentPerson);
+                                                                    const feedback = getImmediateFeedback(userInput, correct);
+                                                                    if (feedback?.type === 'hint') {
+                                                                        return (
+                                                                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-blue-600 font-bold text-sm animate-pulse">
+                                                                                {feedback.message}
+                                                                            </div>
+                                                                        );
+                                                                    }
+                                                                    return null;
+                                                                })()}
+                                                            </div>
+                                                            {immediateFeedback && userInput && (() => {
+                                                                const correct = conjugate(currentVerb, currentTense.id, currentPerson);
+                                                                const feedback = getImmediateFeedback(userInput, correct);
+                                                                if (feedback?.type === 'error') {
+                                                                    return (
+                                                                        <div className="text-center text-red-600 text-sm font-medium animate-in">
+                                                                            Sugerencia: {feedback.message}
+                                                                        </div>
+                                                                    );
+                                                                }
+                                                                return null;
+                                                            })()}
+                                                            <button onClick={checkAnswer} className="w-full py-3 bg-gray-800 hover:bg-black text-white rounded-xl font-bold transition flex items-center justify-center gap-2">Comprobar Respuesta</button>
+                                                            <div className="flex items-center justify-center gap-2 text-xs text-gray-400 font-bold">
+                                                                <ClockIcon timeLeft={timeLeft} />
+                                                                <span className={timeAttackMode && timeLeft < 10 ? "text-red-600 text-lg" : ""}>{timeLeft}s</span>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div className={`rounded-xl py-4 px-4 animate-in ${feedback === 'correct' ? 'bg-green-50 border-2 border-green-200' : 'bg-red-50 border-2 border-red-200'}`}>
+                                                            <FeedbackCharacter type={feedback} />
+                                                            {feedback === 'correct' ? <div className="text-green-700 font-bold text-lg mb-2">¡Correcto! {getMultiplier() > 1 && <span className="text-orange-500">x{getMultiplier()}</span>}</div> : <div className="text-red-600 font-bold text-lg mb-2">Incorrecto 😕</div>}
+                                                            <div className="flex items-center justify-center gap-2">
+                                                                <span className="text-3xl font-black text-gray-800 block mb-1">{conjugate(currentVerb, currentTense.id, currentPerson)}</span>
+                                                                <AudioButton text={conjugate(currentVerb, currentTense.id, currentPerson)} />
+                                                            </div>
+                                                            {feedback === 'incorrect' && userInput && <div className="text-sm text-gray-500 mt-2">Tú escribiste: <span className="line-through decoration-red-400">{userInput}</span></div>}
+                                                            {!timeAttackMode && <div className="w-full bg-gray-200 rounded-full h-1 mt-3 overflow-hidden"><div className="bg-gray-800 h-1 rounded-full animate-[width_2.5s_linear_forwards]" style={{width: '0%'}}></div></div>}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- STATS COMPONENT ---
+        const StatsPanel = ({ errors }) => {
+            if (errors.length === 0) return <div className="p-4 text-center text-gray-400 italic">No hay errores registrados aún. ¡Sigue así!</div>;
+            
+            // Simple frequency map
+            const tenseCounts = {};
+            errors.forEach(e => { tenseCounts[e.tense.label] = (tenseCounts[e.tense.label] || 0) + 1; });
+            const sorted = Object.entries(tenseCounts).sort((a,b) => b[1] - a[1]);
+
+            return (
+                <div className="bg-white rounded-xl shadow p-6 border-t-4 border-red-500 mb-6">
+                    <h3 className="font-bold text-gray-700 mb-4">📊 Tus Áreas de Mejora</h3>
+                    <div className="space-y-2">
+                        {sorted.map(([label, count]) => (
+                            <div key={label} className="flex justify-between items-center text-sm">
+                                <span>{label}</span>
+                                <span className="font-bold bg-red-100 text-red-600 px-2 py-1 rounded-full">{count} errores</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        // --- STUDY VIEW ---
+        const StudySection = ({ errors }) => {
+            const [search, setSearch] = useState("");
+            const [selectedVerb, setSelectedVerb] = useState(null);
+            const filteredVerbs = VERBS.filter(v => v.inf.toLowerCase().includes(search.toLowerCase()));
+
+            return (
+                <div className="w-full max-w-5xl px-4 animate-in flex flex-col md:flex-row gap-6 h-[75vh]">
+                    <div className="w-full md:w-1/3 flex flex-col gap-4">
+                        <StatsPanel errors={errors} />
+                        <div className="flex flex-col bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden flex-1">
+                            <div className="p-4 border-b border-gray-100 bg-gray-50">
+                                <input type="text" placeholder="Buscar verbo..." className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500" value={search} onChange={(e) => setSearch(e.target.value)} />
+                            </div>
+                            <div className="flex-1 overflow-y-auto">
+                                {filteredVerbs.map(verb => (
+                                    <div key={verb.inf} onClick={() => setSelectedVerb(verb)} className={`p-3 border-b border-gray-100 cursor-pointer transition hover:bg-yellow-50 flex justify-between items-center ${selectedVerb?.inf === verb.inf ? 'bg-yellow-100 border-l-4 border-l-red-500' : ''}`}>
+                                        <span className="font-bold text-gray-700">{verb.inf}</span>
+                                        <span className="text-xs text-gray-400 italic">{verb.trans}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                    <div className="w-full md:w-2/3 bg-white rounded-xl shadow-lg border-t-4 border-red-600 overflow-hidden flex flex-col">
+                        {selectedVerb ? (
+                            <div className="flex-1 overflow-y-auto p-6">
+                                <div className="mb-6 border-b pb-4 flex justify-between items-start">
+                                    <div>
+                                        <h2 className="text-4xl font-black text-gray-800">{selectedVerb.inf}</h2>
+                                        <p className="text-xl text-yellow-600 font-medium">{selectedVerb.trans}</p>
+                                    </div>
+                                    <div className="text-xs text-gray-400 uppercase tracking-widest text-right">
+                                        Tipo: {selectedVerb.type === 'reg' ? 'Regular' : 'Irregular / Cambio de raíz'}
+                                    </div>
+                                </div>
+                                <div className="space-y-8">
+                                    {TENSES.map(tense => (
+                                        <div key={tense.id}>
+                                            <h3 className="font-bold text-red-700 uppercase text-sm mb-2 border-l-4 border-yellow-400 pl-2">{tense.label}</h3>
+                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                                {PERSONS.map((person, idx) => (
+                                                    <div key={idx} className="bg-gray-50 p-2 rounded border border-gray-100 text-sm">
+                                                        <div className="text-[10px] text-gray-400 mb-1">{person}</div>
+                                                        <div className="font-bold text-gray-700 flex justify-between">
+                                                            {conjugate(selectedVerb, tense.id, idx)}
+                                                            <button onClick={() => { const u = new SpeechSynthesisUtterance(conjugate(selectedVerb, tense.id, idx)); u.lang='es-ES'; window.speechSynthesis.speak(u); }} className="text-blue-400 hover:text-blue-600">🔊</button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex-1 flex flex-col items-center justify-center text-gray-400 p-8 text-center">
+                                <span className="text-6xl mb-4">📚</span>
+                                <p className="text-lg">Selecciona un verbo para estudiar.</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        // --- TEST VIEW ---
+        const TestSection = ({ score, setScore, attempts, setAttempts, setCombo, setErrors, errors, userProfile, onEditProfile }) => {
+            const [question, setQuestion] = useState(null);
+            const [selectedOption, setSelectedOption] = useState("");
+            const [feedback, setFeedback] = useState(null); 
+            const [selectedTestTenses, setSelectedTestTenses] = useState(new Set(TENSES.map(t => t.id))); 
+            
+            const [timeLeft, setTimeLeft] = useState(10);
+            const [questionsAnswered, setQuestionsAnswered] = useState(0);
+            const [isPaused, setIsPaused] = useState(false);
+            const timerRef = useRef(null);
+            
+            const SENTENCE_TEMPLATES = {
+                pres: "Generalmente, {p} ______ ({v}) {c}.",
+                pret: "Ayer, {p} ______ ({v}) {c}.",
+                imp: "Antes, {p} siempre ______ ({v}) {c}.",
+                perf: "Esta semana, {p} ya ______ ({v}) {c}.",
+                fut: "En el futuro, {p} ______ ({v}) {c}.",
+                cond: "Si pudiera, {p} ______ ({v}) {c}.",
+                sub_pres: "Es importante que {p} ______ ({v}) {c}.",
+                sub_imp: "Me gustaría que {p} ______ ({v}) {c}.",
+                imp_comp: "Antes de ayer, {p} ya había ______ ({v}) {c}.",
+                fut_comp: "Mañana, {p} habrá ______ ({v}) {c}."
+            };
+
+            const generateQuestion = () => {
+                const v = VERBS[Math.floor(Math.random() * VERBS.length)];
+                const availableTenses = TENSES.filter(t => selectedTestTenses.has(t.id));
+                const pool = availableTenses.length > 0 ? availableTenses : TENSES;
+                const t = pool[Math.floor(Math.random() * pool.length)];
+                const p = Math.floor(Math.random() * 6);
+                const correctAns = conjugate(v, t.id, p);
+                const distractors = new Set();
+                while(distractors.size < 3) {
+                    const randP = Math.floor(Math.random() * 6);
+                    const randT = TENSES[Math.floor(Math.random() * TENSES.length)];
+                    let wrongAns = conjugate(v, randT.id, randP);
+                    if (wrongAns !== correctAns && wrongAns !== "?") distractors.add(wrongAns);
+                }
+                const options = [correctAns, ...Array.from(distractors)].sort(() => Math.random() - 0.5);
+                setQuestion({ verb: v, tense: t, personIdx: p, correct: correctAns, options: options, template: SENTENCE_TEMPLATES[t.id] });
+                setSelectedOption("");
+                setFeedback(null);
+                setTimeLeft(10);
+            };
+
+            useEffect(() => { generateQuestion(); }, []);
+
+            const handleSelect = (val) => {
+                setSelectedOption(val);
+                setAttempts(prev => prev + 1);
+                
+                const correctAnswer = conjugate(question.verb, question.tense.id, question.personIdx);
+                speakText(correctAnswer);
+
+                if (val === question.correct) {
+                    setFeedback({ type: 'correct', msg: '¡Correcto!' });
+                    setScore(prev => prev + 1);
+                    setCombo(prev => prev + 1);
+                } else {
+                    setFeedback({ type: 'incorrect', msg: `Incorrecto. Era: "${question.correct}".` });
+                    setScore(prev => Math.max(0, prev - 1));
+                    setCombo(0);
+                    // Add to error bank from test too
+                    const exists = errors.find(e => e.verb.inf === question.verb.inf && e.tense.id === question.tense.id && e.person === question.personIdx);
+                    if (!exists) setErrors(prev => [...prev, { verb: question.verb, tense: question.tense, person: question.personIdx }]);
+                }
+                setTimeout(() => generateQuestion(), 2500);
+            };
+
+            useEffect(() => {
+                if (!feedback && !isPaused && timeLeft > 0) {
+                    timerRef.current = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+                } else if (timeLeft === 0 && !feedback && !isPaused) {
+                    handleTimeout();
+                }
+                return () => clearTimeout(timerRef.current);
+            }, [timeLeft, feedback, isPaused]);
+
+            const handlePauseCheck = () => {
+                const newCount = questionsAnswered + 1;
+                setQuestionsAnswered(newCount);
+                if (newCount > 0 && newCount % 10 === 0) {
+                    setIsPaused(true);
+                } else {
+                    setTimeout(() => generateQuestion(), 2500);
+                }
+            };
+
+            const handleResume = () => {
+                setIsPaused(false);
+                generateQuestion();
+            };
+
+            const handleTimeout = () => {
+                setFeedback({ type: 'incorrect', msg: '¡Tiempo agotado!' });
+                setAttempts(prev => prev + 1);
+                setScore(prev => Math.max(0, prev - 1));
+                
+                const correctAnswer = conjugate(question.verb, question.tense.id, question.personIdx);
+                speakText(correctAnswer);
+
+                handlePauseCheck();
+            };
+
+            if (!question) return null;
+            const filledTemplate = question.template.replace("{p}", `<span class="font-bold text-gray-800">${PERSONS[question.personIdx]}</span>`).replace("{v}", question.verb.inf).replace("{c}", question.verb.ctx); 
+
+            return (
+                <div className="w-full max-w-2xl px-4 animate-in flex flex-col items-center justify-center min-h-[60vh] mx-auto relative">
+                    {isPaused && <PauseModal onResume={handleResume} count={questionsAnswered} score={score} />}
+                    <ScoreBoard score={score} attempts={attempts} currentTheme="theme-spain" unlockedThemes={[]} setCustomTheme={() => {}} userProfile={userProfile} onEditProfile={onEditProfile} />
+                    <div className="w-full max-w-xs mb-6"><TenseSelector selectedTenses={selectedTestTenses} setSelectedTenses={setSelectedTestTenses} /></div>
+                    <div className="bg-white rounded-2xl shadow-xl border-t-8 border-blue-600 w-full p-8 text-center relative overflow-hidden">
+                        {!feedback && <div className="absolute top-0 left-0 h-1 bg-blue-500 z-10 timer-bar" style={{width: `${(timeLeft / 10) * 100}%`}}></div>}
+                        <h2 className="text-gray-400 font-bold uppercase text-xs tracking-widest mb-4">{question.tense.label}</h2>
+                        <div className="text-2xl md:text-3xl text-gray-600 mb-8 leading-relaxed font-medium"><span dangerouslySetInnerHTML={{__html: filledTemplate}}></span></div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+                            {question.options.map((opt, idx) => (
+                                <button key={idx} onClick={() => !feedback && handleSelect(opt)} disabled={!!feedback} className={`p-4 rounded-xl border-2 font-bold text-lg transition-all ${feedback && opt === question.correct ? 'bg-green-100 border-green-500 text-green-800' : ''} ${feedback && opt === selectedOption && opt !== question.correct ? 'bg-red-100 border-red-500 text-red-800' : ''} ${!feedback ? 'bg-white border-gray-200 hover:border-blue-400 hover:bg-blue-50 text-gray-700' : ''} ${feedback && opt !== question.correct && opt !== selectedOption ? 'opacity-40 border-gray-100' : ''}`}>
+                                    {opt}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="h-16 flex items-center justify-center">
+                            {feedback ? (
+                                <div className={`flex flex-col items-center animate-in ${feedback.type === 'correct' ? 'text-green-600' : 'text-red-600'}`}>
+                                    <div className="flex items-center gap-2">
+                                        <FeedbackCharacter type={feedback.type} />
+                                        <div><span className="text-2xl">{feedback.type === 'correct' ? '🎉' : '⚠️'}</span><span className="font-bold">{feedback.msg}</span></div>
+                                        <AudioButton text={question.correct} />
+                                    </div>
+                                    <div className="w-32 bg-gray-200 rounded-full h-1 mt-2 overflow-hidden"><div className="bg-gray-800 h-1 rounded-full animate-[width_2.5s_linear_forwards]" style={{width: '0%'}}></div></div>
+                                </div>
+                            ) : (
+                                <div className="flex items-center justify-center gap-2 text-xs font-bold text-gray-400">
+                                    <ClockIcon timeLeft={timeLeft} />
+                                    <span>{timeLeft}s</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- MAIN APP ---
+        const App = () => {
+            // Load initial state from local storage if available
+            const savedData = JSON.parse(localStorage.getItem('ruletaVerbosData'));
+
+            const [view, setView] = useState('game');
+            const [score, setScore] = useState(savedData?.score || 0);
+            const [attempts, setAttempts] = useState(savedData?.attempts || 0);
+            const [combo, setCombo] = useState(0); 
+            const [errors, setErrors] = useState(savedData?.errors || []);
+            const [currentTheme, setCustomTheme] = useState(savedData?.currentTheme || 'theme-spain');
+            const [unlockedThemes, setUnlockedThemes] = useState(savedData?.unlockedThemes || ['theme-spain']);
+            const [timeAttackMode, setTimeAttackMode] = useState(false);
+            const [userProfile, setUserProfile] = useState(savedData?.userProfile || null);
+            const [isEditingProfile, setIsEditingProfile] = useState(false);
+
+            // Save data effect
+            useEffect(() => {
+                const dataToSave = {
+                    score,
+                    attempts,
+                    errors,
+                    currentTheme,
+                    unlockedThemes,
+                    userProfile
+                };
+                localStorage.setItem('ruletaVerbosData', JSON.stringify(dataToSave));
+            }, [score, attempts, errors, currentTheme, unlockedThemes, userProfile]);
+
+            const resetProgress = () => {
+                if(confirm("¿Estás seguro de que quieres borrar todo tu progreso?")) {
+                    localStorage.removeItem('ruletaVerbosData');
+                    window.location.reload();
+                }
+            };
+
+            // Unlock Check
+            useEffect(() => {
+                const level = getCurrentLevel(score);
+                if (!unlockedThemes.includes(level.theme)) {
+                    setUnlockedThemes(prev => [...prev, level.theme]);
+                    setCustomTheme(level.theme); // Auto-apply new theme
+                }
+            }, [score]);
+
+            if (!userProfile || isEditingProfile) {
+                return (
+                    <ProfileSetup 
+                        initialData={userProfile}
+                        onComplete={(data) => {
+                            setUserProfile(data);
+                            setIsEditingProfile(false);
+                        }} 
+                    />
+                );
+            }
+
+            return (
+                <div className="min-h-screen flex flex-col items-center pb-8 transition-colors duration-1000">
+                    <div className={`w-full h-4 shadow-md ${currentTheme}`}></div>
+                    <header className="bg-white w-full py-4 px-4 flex flex-col md:flex-row justify-between items-center shadow-sm border-b-4 border-yellow-400 mb-6 gap-4">
+                        <div>
+                            <h1 className="text-2xl md:text-3xl font-black text-gray-800 tracking-tighter uppercase text-center md:text-left">Ruleta de Verbos</h1>
+                            <p className="text-yellow-600 font-bold text-xs tracking-widest text-center md:text-left">Nivel B1 a C2</p>
+                        </div>
+                        <div className="bg-gray-100 p-1 rounded-full flex text-sm font-bold shadow-inner flex-wrap justify-center">
+                            <button onClick={() => setView('game')} className={`px-4 md:px-6 py-2 rounded-full transition-all ${view === 'game' ? 'bg-gray-800 text-white shadow-md' : 'text-gray-500 hover:text-gray-700'}`}>Jugar</button>
+                            <button onClick={() => setView('study')} className={`px-4 md:px-6 py-2 rounded-full transition-all ${view === 'study' ? 'bg-gray-800 text-white shadow-md' : 'text-gray-500 hover:text-gray-700'}`}>Estudiar</button>
+                            <button onClick={() => setView('test')} className={`px-4 md:px-6 py-2 rounded-full transition-all ${view === 'test' ? 'bg-gray-800 text-white shadow-md' : 'text-gray-500 hover:text-gray-700'}`}>Test</button>
+                        </div>
+                    </header>
+
+                    {view === 'game' && <GameSection 
+                        score={score} setScore={setScore} 
+                        attempts={attempts} setAttempts={setAttempts} 
+                        combo={combo} setCombo={setCombo}
+                        errors={errors} setErrors={setErrors}
+                        currentTheme={currentTheme} unlockedThemes={unlockedThemes} setCustomTheme={setCustomTheme}
+                        timeAttackMode={timeAttackMode} setTimeAttackMode={setTimeAttackMode}
+                        userProfile={userProfile}
+                        onEditProfile={() => setIsEditingProfile(true)}
+                    />}
+                    {view === 'study' && <StudySection errors={errors} />}
+                    {view === 'test' && <TestSection score={score} setScore={setScore} attempts={attempts} setAttempts={setAttempts} setCombo={setCombo} setErrors={setErrors} errors={errors} userProfile={userProfile} onEditProfile={() => setIsEditingProfile(true)} />}
+
+                    <footer className="w-full text-center text-gray-400 text-xs py-6 mt-auto">
+                        Hecho con 💛 y ❤️ para practicar español
+                        <br/>
+                        <button onClick={resetProgress} className="mt-2 text-[10px] text-red-300 hover:text-red-500 underline">🗑️ Borrar Datos</button>
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
