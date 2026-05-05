@@ -1086,7 +1086,14 @@
 
             const checkAnswer = () => {
                 try {
-                    const correct = safeConjugate(currentVerb, currentTense.id, currentPerson).toLowerCase().trim();
+                    const correctRaw = safeConjugate(currentVerb, currentTense.id, currentPerson);
+                    if (!correctRaw) {
+                        console.error('Failed to conjugate verb');
+                        setShowAnswer(true);
+                        setFeedback('incorrect');
+                        return;
+                    }
+                    const correct = correctRaw.toLowerCase().trim();
                     const user = userInput.toLowerCase().trim();
                     
                     setShowAnswer(true);
